@@ -1,0 +1,239 @@
+* {
+    font-size: 13px;
+}
+
+menuitem:disabled > label {
+    color: dimgrey;
+}
+button {
+    border-width: 1px;
+    padding: 4px;
+}
+#alphabet-scroller-button {
+    min-width: 10px;
+    min-height: 10px;
+    padding: 0px;
+}
+#alphabet-scroller-button > label {
+    font-size: 9px;
+}
+#unicode-kbd-button {
+    min-width: 10px;
+    min-height: 10px;
+    padding: 0px;
+}
+#search-box flowboxchild {
+    padding: 3px;
+}
+#unicode-kbd flowboxchild {
+    padding: 0px;
+    padding-right: 2px;
+}
+arrow-button {
+    padding: 0px;
+    padding-right: 6px;
+}
+#arrow-button-track {
+    padding-right: 2px;
+    padding-left: 3px;
+    margin-bottom: 1px;
+}
+#play-button {
+    margin-top: 6px;
+    margin-right: 10px;
+    margin-bottom: 0px;
+    background-color: #262626;
+    border-color: #262626;
+}
+#play-button:hover {
+    border-color: #009185;
+}
+#work-metadata-group {
+    padding-left: 4px;
+    padding-right: 1px;
+    padding-top: 2px;
+}
+#select-button-left {
+    padding: 3px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+    border-right-width: 1px;
+}
+#select-button-right {
+    padding: 0px;
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border-left-width: 0px;
+}
+#select-button-left:hover + #select-button-right {
+    border-color: #009185;
+}
+#select-button-right:hover {
+    background-color: #009185;
+}
+#doublebutton-left {
+    padding: 3px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+    border-right-width: 1px;
+}
+#doublebutton-right {
+    padding: 3px;
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border-left-width: 0px;
+}
+#doublebutton-left:hover + #doublebutton-right {
+    border-color: #009185;
+}
+#doublebutton-right:hover {
+    background-color: #009185;
+}
+#save-button {
+    margin-top: 1px;
+    margin-bottom: 1px;
+}
+#save-button #doublebutton-left {
+    padding: 4px;
+}
+#image-button {
+    padding: 3px;
+}
+#edit-left-notebook tab {
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 4px;
+    padding-right: 4px;
+}
+/*#import-file-button {
+    padding: 2px;
+}*/
+/*#doublebutton-left {
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+    background-color: red;
+}
+#doublebutton-right {
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border-left-width: 0px;
+}
+#doublebutton-right:hover {
+    border-color: #545454;
+}*/
+/*#tab-label {
+    padding: 0px;
+    border: 0px;
+}*/
+
+/* Set the theme to Breeze:dark (export GTK_THEME=Breeze:dark). These set
+ * the background color for individual custom widgets to match. */
+/*#recording-view {
+    background-color: #444854;
+}*/
+/*#recording-view:selected {
+    background-color: #3daee9;
+    color: black;
+}*/
+/*#recording-view button {
+    border-width: 0px;
+    border-color: #444854;
+}*/
+/*treeview button:hover {
+    border-color: #5066a6;
+    border-width: 1px;
+}*/
+/*#track-view {
+    background-color: #444854;
+}*/
+/*#track-view:selected {
+    background-color: #3daee9;
+    color: black;
+}*/
+
+/*button:hover {
+    border-color: #5066a6;
+}*/
+/*treeview {
+    -GtkTreeView-grid-line-width: 0;
+}*/
+
+/*popover box scale contents trough {
+    background-color: #5066a6;
+}*/
+/*#recordingview-col-button {
+    padding-top: 2px;
+    padding-bottom: 2px;
+}*/
+/*work-metadata-entry {
+    padding: 4px;
+    min-height: 0px;
+    background-color: #424242;
+}*/
+
+/* Recording view */
+/*#recordingview-col-label {
+    font-size: 11.3px;
+    padding: 0px;
+}*/
+/*#recordingview-col-button {
+    padding: 3px;
+}*/
+/*button widget box {
+    background-color: #444854;
+    margin: 3px;
+}*/
+/*#save-button-left:hover {
+    border-right-color: #545454;
+}*/
+/* button-left has a right border and button-right has a left border. The
+ * two borders abut. I could give one a width of 0, but then the hover
+ * highlighting for one button is missing one side. */
+/*#save-button-right:hover + #save-button-left {
+    border-left-color: #009185;
+    border-top-color: #009185;
+    border-bottom-color: #009185;
+}*/
+/* the next one works, but the previous one does not. The order of the
+ children matters. */
+/*#save-button-left:hover + #save-button-right {
+    border-right-color: #009185;
+    border-top-color: #009185;
+    border-bottom-color: #009185;
+}*/
+/*#track-scrolledwindow {
+    border-right-width: 0px;
+    border-top-width: 0px
+}*/
+/*#play-button {
+    margin: 6px;
+    border: 0px;
+    padding: 0px;
+}
+#play-button-image {
+    background-color: #444854;
+}*/
+/*#edit-notebook tab {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: 3px;
+    padding-right: 3px;
+}
+#edit-notebook entry {
+    border: 0px;
+    background-color: #444854;
+}
+#edit-notebook button {
+    background-color: #31363b;
+}*/
+/*#cover-art-viewer {
+    background-color: #444854;
+    padding: 20px;
+}*/
+/*progressbar trough {
+    border-width: 1px;
+    border-color: #5066a6;
+}*/
+/*#play-queue-view {
+    background-color: red;
+}*/

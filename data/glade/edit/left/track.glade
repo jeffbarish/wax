@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.40.0 -->
+<interface>
+  <requires lib="gtk+" version="3.20"/>
+  <object class="GtkTreeStore" id="track_treestore">
+    <columns>
+      <!-- column-name playable_activatable -->
+      <column type="gboolean"/>
+      <!-- column-name track_tuple -->
+      <column type="PyObject"/>
+      <!-- column-name playable -->
+      <column type="gboolean"/>
+    </columns>
+  </object>
+  <template class="edit_track_vbox" parent="GtkBox">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="orientation">vertical</property>
+    <child>
+      <object class="GtkBox" id="top_buttons_box">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="margin-top">3</property>
+        <property name="margin-bottom">2</property>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">0</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkScrolledWindow" id="track_scrolledwindow">
+        <property name="name">track-scrolledwindow</property>
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="hscrollbar-policy">never</property>
+        <property name="shadow-type">in</property>
+        <child>
+          <object class="GtkTreeView" id="track_treeview">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="model">track_treestore</property>
+            <property name="headers-visible">False</property>
+            <property name="headers-clickable">False</property>
+            <property name="expander-column">track_tuple_column</property>
+            <property name="reorderable">True</property>
+            <property name="enable-search">False</property>
+            <property name="rubber-banding">True</property>
+            <signal name="button-press-event" handler="on_track_treeview_button_press_event" swapped="no"/>
+            <signal name="drag-data-received" handler="on_track_treeview_drag_data_received" swapped="no"/>
+            <signal name="drag-motion" handler="on_track_treeview_drag_motion" swapped="no"/>
+            <child internal-child="selection">
+              <object class="GtkTreeSelection" id="track_treeselection">
+                <property name="mode">multiple</property>
+                <signal name="changed" handler="on_track_treeselection_changed" swapped="no"/>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="playable_toggle_column">
+                <property name="sizing">fixed</property>
+                <property name="title" translatable="yes">column</property>
+                <child>
+                  <object class="GtkCellRendererToggle" id="playable_toggle_renderer">
+                    <signal name="toggled" handler="on_playable_toggle_renderer_toggled" swapped="no"/>
+                  </object>
+                  <attributes>
+                    <attribute name="sensitive">0</attribute>
+                    <attribute name="active">2</attribute>
+                  </attributes>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="track_tuple_column">
+                <property name="sizing">autosize</property>
+                <property name="title" translatable="yes">column</property>
+                <property name="expand">True</property>
+                <child>
+                  <object class="GtkCellRendererText" id="track_title_renderer">
+                    <property name="editable">True</property>
+                    <property name="ellipsize">end</property>
+                    <signal name="edited" handler="on_text_renderer_edited" swapped="no"/>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="handle_column">
+                <property name="sizing">fixed</property>
+                <property name="fixed-width">20</property>
+                <property name="title" translatable="yes">column</property>
+                <child>
+                  <object class="GtkCellRendererText" id="handle_renderer">
+                    <property name="text">⇳</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">True</property>
+        <property name="fill">True</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="ungroup_box">
+        <property name="can-focus">False</property>
+        <property name="no-show-all">True</property>
+        <property name="margin-top">1</property>
+        <property name="spacing">2</property>
+        <child>
+          <object class="GtkEntry" id="ungroup_title_entry">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <signal name="icon-press" handler="on_ungroup_title_entry_icon_press" swapped="no"/>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="ungroup_button">
+            <property name="label" translatable="yes">Ungroup</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="receives-default">True</property>
+            <signal name="clicked" handler="on_ungroup_button_clicked" swapped="no"/>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">2</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="group_box">
+        <property name="can-focus">False</property>
+        <property name="no-show-all">True</property>
+        <property name="margin-top">1</property>
+        <property name="margin-bottom">2</property>
+        <property name="spacing">1</property>
+        <child>
+          <object class="GtkEntry" id="group_title_entry">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="placeholder-text" translatable="yes">group title</property>
+            <signal name="icon-press" handler="on_group_title_entry_icon_press" swapped="no"/>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="group_button">
+            <property name="label" translatable="yes">Group</property>
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="receives-default">True</property>
+            <signal name="clicked" handler="on_group_button_clicked" swapped="no"/>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">3</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="track_metadata_box">
+        <property name="can-focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">4</property>
+      </packing>
+    </child>
+  </template>
+</interface>

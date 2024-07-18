@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.38.2 -->
+<interface>
+  <requires lib="gtk+" version="3.20"/>
+  <template class="edit_files_treeview" parent="GtkTreeView">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="headers-visible">False</property>
+    <property name="headers-clickable">False</property>
+    <property name="enable-search">False</property>
+    <property name="show-expanders">False</property>
+    <child internal-child="selection">
+      <object class="GtkTreeSelection" id="edit_files_treeselection">
+        <property name="mode">none</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkTreeViewColumn" id="file_name_column">
+        <property name="sizing">fixed</property>
+        <property name="fixed-width">200</property>
+        <property name="title" translatable="yes">file_name</property>
+        <property name="expand">True</property>
+        <child>
+          <object class="GtkCellRendererText" id="file_name_renderer">
+            <property name="height">18</property>
+            <property name="xalign">0</property>
+            <property name="yalign">1</property>
+            <property name="ellipsize">end</property>
+            <property name="font">Monospace</property>
+            <property name="size-points">9</property>
+          </object>
+          <attributes>
+            <attribute name="text">0</attribute>
+          </attributes>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="GtkTreeViewColumn" id="file_size_column">
+        <property name="sizing">fixed</property>
+        <property name="title" translatable="yes">file_size</property>
+        <child>
+          <object class="GtkCellRendererText" id="file_size_renderer">
+            <property name="height">18</property>
+            <property name="xpad">16</property>
+            <property name="xalign">1</property>
+            <property name="alignment">right</property>
+            <property name="font">Monospace</property>
+            <property name="size-points">9</property>
+          </object>
+          <attributes>
+            <attribute name="text">1</attribute>
+          </attributes>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="GtkTreeViewColumn" id="date_column">
+        <property name="sizing">fixed</property>
+        <property name="title" translatable="yes">date</property>
+        <child>
+          <object class="GtkCellRendererText" id="date_renderer">
+            <property name="height">18</property>
+            <property name="font">Monospace</property>
+            <property name="size-points">9</property>
+          </object>
+          <attributes>
+            <attribute name="text">2</attribute>
+          </attributes>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

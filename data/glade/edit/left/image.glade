@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.40.0 -->
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <object class="GtkListStore" id="images_liststore">
+    <columns>
+      <!-- column-name image -->
+      <column type="GdkPixbuf"/>
+      <!-- column-name thumbnail -->
+      <column type="GdkPixbuf"/>
+      <!-- column-name provenance -->
+      <column type="gint"/>
+      <!-- column-name index -->
+      <column type="gint"/>
+      <!-- column-name disc_num -->
+      <column type="gint"/>
+    </columns>
+    <signal name="row-changed" handler="on_images_liststore_row_changed" swapped="no"/>
+    <signal name="row-deleted" handler="on_images_liststore_row_deleted" swapped="no"/>
+    <signal name="row-inserted" handler="on_images_liststore_row_inserted" swapped="no"/>
+  </object>
+  <template class="edit_images_box" parent="GtkBox">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <child>
+      <object class="GtkScrolledWindow" id="thumbnails_scrolledwindow">
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="hscrollbar-policy">never</property>
+        <property name="shadow-type">in</property>
+        <child>
+          <object class="GtkTreeView" id="thumbnail_treeview">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="model">images_liststore</property>
+            <property name="headers-visible">False</property>
+            <property name="reorderable">True</property>
+            <child internal-child="selection">
+              <object class="GtkTreeSelection" id="thumbnail_treeselection">
+                <signal name="changed" handler="on_thumbnail_treeselection_changed" swapped="no"/>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="thumbnail_column">
+                <property name="title" translatable="yes">column</property>
+                <child>
+                  <object class="GtkCellRendererPixbuf" id="thumbnail_renderer"/>
+                  <attributes>
+                    <attribute name="pixbuf">1</attribute>
+                  </attributes>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">False</property>
+        <property name="position">0</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkBox" id="image_box">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <object class="GtkBox" id="image_buttons_box">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="margin-start">3</property>
+            <property name="margin-bottom">1</property>
+            <property name="spacing">1</property>
+            <child>
+              <object class="GtkLabel" id="image_provenance_label">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="image_delete_button">
+                <property name="name">image-button</property>
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can-focus">False</property>
+                <property name="receives-default">True</property>
+                <property name="tooltip-text" translatable="yes">Clear</property>
+                <signal name="clicked" handler="on_image_delete_button_clicked" object="thumbnail_treeselection" swapped="no"/>
+                <child>
+                  <object class="GtkImage" id="delete_button_image">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="icon-name">edit-clear</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="pack-type">end</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <object class="GtkButton" id="image_download_button">
+                <property name="name">image-button</property>
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can-focus">False</property>
+                <property name="receives-default">True</property>
+                <property name="tooltip-text" translatable="yes">Download</property>
+                <signal name="clicked" handler="on_image_download_button_clicked" swapped="no"/>
+                <child>
+                  <object class="GtkImage" id="download_button_image">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="pixbuf">data/images/download.png</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="pack-type">end</property>
+                <property name="position">3</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="image_paste_button">
+                <property name="name">image-button</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="receives-default">True</property>
+                <property name="tooltip-text" translatable="yes">Paste</property>
+                <signal name="clicked" handler="on_image_paste_button_clicked" swapped="no"/>
+                <child>
+                  <object class="GtkImage" id="paste_button_image">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="icon-name">edit-paste</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">False</property>
+                <property name="pack-type">end</property>
+                <property name="position">4</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack-type">end</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">True</property>
+        <property name="fill">True</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
+  </template>
+  <object class="GtkSizeGroup" id="image_buttons_sizegroup">
+    <widgets>
+      <widget name="image_delete_button"/>
+      <widget name="image_download_button"/>
+      <widget name="image_paste_button"/>
+    </widgets>
+  </object>
+</interface>

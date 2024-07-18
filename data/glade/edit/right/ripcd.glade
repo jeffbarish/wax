@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.40.0 -->
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <template class="ripcd_box" parent="GtkBox">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="margin-top">3</property>
+    <property name="margin-bottom">3</property>
+    <property name="orientation">vertical</property>
+    <child>
+      <object class="GtkBox" id="ripcd_stack_box">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="margin-start">3</property>
+        <property name="spacing">3</property>
+        <child>
+          <object class="GtkStack" id="ripcd_left_stack">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="hhomogeneous">False</property>
+            <child>
+              <object class="GtkBox" id="ripcd_message_label_box">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <child>
+                  <placeholder/>
+                </child>
+              </object>
+              <packing>
+                <property name="name">label</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkBox" id="ripcd_track_progress_box">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="spacing">3</property>
+                <child>
+                  <object class="GtkLabel" id="ripcd_track_label">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="single-line-mode">True</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkProgressBar" id="ripcd_progressbar">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="valign">center</property>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="name">progress</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkStack" id="ripcd_right_stack">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="hhomogeneous">False</property>
+            <child>
+              <object class="GtkButton" id="cd_eject_button">
+                <property name="label" translatable="yes">Eject CD</property>
+                <property name="visible">True</property>
+                <property name="sensitive">False</property>
+                <property name="can-focus">False</property>
+                <property name="receives-default">True</property>
+                <signal name="clicked" handler="on_cd_eject_button_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="name">create</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="abort_button">
+                <property name="label" translatable="yes">Abort</property>
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="receives-default">True</property>
+                <signal name="clicked" handler="on_abort_button_clicked" swapped="no"/>
+              </object>
+              <packing>
+                <property name="name">stop</property>
+                <property name="title" translatable="yes">stop</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack-type">end</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">0</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkScrolledWindow" id="raw_metadata_scrolledwindow">
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="hscrollbar-policy">never</property>
+        <child>
+          <placeholder/>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">True</property>
+        <property name="fill">True</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
+  </template>
+  <object class="GtkSizeGroup" id="ripcd_button_sizegroup">
+    <widgets>
+      <widget name="cd_eject_button"/>
+      <widget name="abort_button"/>
+    </widgets>
+  </object>
+</interface>

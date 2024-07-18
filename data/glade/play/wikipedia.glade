@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.40.0 -->
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <object class="GtkMenu" id="wikipedia_search_menu">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+  </object>
+  <template class="wikipedia_box" parent="GtkBox">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="margin-start">3</property>
+    <property name="margin-end">1</property>
+    <property name="margin-top">3</property>
+    <property name="orientation">vertical</property>
+    <child>
+      <object class="GtkBox" id="wikipedia_control_buttons_box">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="margin-bottom">4</property>
+        <property name="spacing">1</property>
+        <child>
+          <object class="GtkMenuButton" id="wikipedia_search_menubutton">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="focus-on-click">False</property>
+            <property name="receives-default">True</property>
+            <property name="popup">wikipedia_search_menu</property>
+            <property name="use-popover">False</property>
+            <child>
+              <object class="GtkBox" id="wikipedia_search_button_box">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="spacing">3</property>
+                <child>
+                  <object class="GtkLabel" id="wikipedia_search_label">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label" translatable="yes">Search</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkImage" id="wikipedia_search_image">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="pixbuf">data/images/menu-open.png</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="wikipedia_page_next_button">
+            <property name="visible">True</property>
+            <property name="sensitive">False</property>
+            <property name="can-focus">False</property>
+            <property name="receives-default">True</property>
+            <signal name="clicked" handler="on_wikipedia_page_next_button_clicked" swapped="no"/>
+            <child>
+              <object class="GtkImage" id="wikipedia_page_next_image">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="pixbuf">data/images/go-next.png</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack-type">end</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="wikipedia_page_prev_button">
+            <property name="visible">True</property>
+            <property name="sensitive">False</property>
+            <property name="can-focus">False</property>
+            <property name="receives-default">True</property>
+            <signal name="clicked" handler="on_wikipedia_page_prev_button_clicked" swapped="no"/>
+            <child>
+              <object class="GtkImage" id="wikipedia_page_prev_image">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="pixbuf">data/images/go-prev.png</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack-type">end</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">0</property>
+      </packing>
+    </child>
+  </template>
+</interface>

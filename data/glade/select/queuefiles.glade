@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.40.0 -->
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <object class="GtkListStore" id="queuefiles_liststore">
+    <columns>
+      <!-- column-name name -->
+      <column type="gchararray"/>
+      <!-- column-name duration -->
+      <column type="gchararray"/>
+      <!-- column-name n__recs -->
+      <column type="gint"/>
+    </columns>
+  </object>
+  <template class="queuefiles_scrolledwindow" parent="GtkScrolledWindow">
+    <property name="visible">True</property>
+    <property name="can-focus">True</property>
+    <property name="shadow-type">in</property>
+    <child>
+      <object class="GtkViewport" id="queuefiles_viewport">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <child>
+          <object class="GtkBox" id="queuefiles_box">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="margin-start">3</property>
+            <property name="margin-end">1</property>
+            <property name="margin-top">3</property>
+            <property name="orientation">vertical</property>
+            <property name="spacing">1</property>
+            <child>
+              <object class="GtkBox" id="queuefiles_button_box">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="spacing">3</property>
+                <child>
+                  <object class="GtkEntry" id="queuefiles_name_entry">
+                    <property name="visible">True</property>
+                    <property name="can-focus">True</property>
+                    <signal name="changed" handler="on_queuefiles_name_entry_changed" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="queuefiles_save_button">
+                    <property name="label" translatable="yes">Save</property>
+                    <property name="width-request">60</property>
+                    <property name="visible">True</property>
+                    <property name="sensitive">False</property>
+                    <property name="can-focus">False</property>
+                    <property name="receives-default">True</property>
+                    <signal name="clicked" handler="on_queuefiles_save_button_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="queuefiles_load_button">
+                    <property name="label" translatable="yes">Load</property>
+                    <property name="visible">True</property>
+                    <property name="sensitive">False</property>
+                    <property name="can-focus">False</property>
+                    <property name="receives-default">True</property>
+                    <signal name="clicked" handler="on_queuefiles_load_button_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="queuefiles_delete_button">
+                    <property name="label" translatable="yes">Delete</property>
+                    <property name="visible">True</property>
+                    <property name="sensitive">False</property>
+                    <property name="can-focus">False</property>
+                    <property name="receives-default">True</property>
+                    <signal name="clicked" handler="on_queuefiles_delete_button_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkTreeView" id="queuefiles_treeview">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="margin-top">3</property>
+                <property name="model">queuefiles_liststore</property>
+                <property name="headers-clickable">False</property>
+                <property name="enable-search">False</property>
+                <property name="search-column">0</property>
+                <property name="show-expanders">False</property>
+                <child internal-child="selection">
+                  <object class="GtkTreeSelection" id="queuefiles_treeselection">
+                    <signal name="changed" handler="on_queuefiles_treeselection_changed" swapped="no"/>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="queuefiles_name_treeviewcolumn">
+                    <property name="sizing">fixed</property>
+                    <property name="fixed-width">100</property>
+                    <property name="title" translatable="yes">name</property>
+                    <property name="expand">True</property>
+                    <property name="alignment">0.5</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="queuefiles_name_cellrenderer"/>
+                      <attributes>
+                        <attribute name="text">0</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="queuefiles_duration_treeviewcolumn">
+                    <property name="min-width">80</property>
+                    <property name="title" translatable="yes">duration</property>
+                    <property name="alignment">0.5</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="duration_cellrenderer">
+                        <property name="xalign">1</property>
+                      </object>
+                      <attributes>
+                        <attribute name="text">1</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="queuefiles_n_recs_treeviewcolumn">
+                    <property name="min-width">80</property>
+                    <property name="title">n works</property>
+                    <property name="alignment">0.5</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="n_recs_cellrenderer">
+                        <property name="xalign">1</property>
+                      </object>
+                      <attributes>
+                        <attribute name="text">2</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+  <object class="GtkSizeGroup" id="queuefiles_button_group">
+    <widgets>
+      <widget name="queuefiles_save_button"/>
+      <widget name="queuefiles_load_button"/>
+      <widget name="queuefiles_delete_button"/>
+    </widgets>
+  </object>
+</interface>

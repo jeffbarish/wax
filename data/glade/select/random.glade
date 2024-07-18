@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.40.0 -->
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <object class="GtkLabel" id="alltracks_treeviewcolumn_label">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="label" translatable="yes">all tracks</property>
+    <attributes>
+      <attribute name="style" value="oblique"/>
+    </attributes>
+  </object>
+  <object class="GtkLabel" id="genre_name_treeviewcolumn_label">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="label" translatable="yes">genre</property>
+    <attributes>
+      <attribute name="style" value="oblique"/>
+    </attributes>
+  </object>
+  <object class="GtkAdjustment" id="genre_weight_adjustment">
+    <property name="upper">10</property>
+    <property name="step-increment">1</property>
+    <property name="page-increment">1</property>
+  </object>
+  <object class="GtkLabel" id="genre_weight_treeviewcolumn_label">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="label" translatable="yes">weight</property>
+    <attributes>
+      <attribute name="style" value="oblique"/>
+    </attributes>
+  </object>
+  <object class="GtkAdjustment" id="random_duration_adjustment">
+    <property name="upper">10</property>
+    <property name="step-increment">0.25</property>
+    <property name="page-increment">0.25</property>
+    <signal name="value-changed" handler="on_random_duration_adjustment_value_changed" object="random_liststore" swapped="no"/>
+  </object>
+  <object class="GtkListStore" id="random_liststore">
+    <columns>
+      <!-- column-name genre -->
+      <column type="gchararray"/>
+      <!-- column-name weight -->
+      <column type="gint"/>
+      <!-- column-name alltracks -->
+      <column type="gboolean"/>
+    </columns>
+    <signal name="row-changed" handler="on_random_liststore_row_changed" swapped="no"/>
+  </object>
+  <template class="random_scrolledwindow" parent="GtkScrolledWindow">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="shadow-type">in</property>
+    <child>
+      <object class="GtkViewport" id="random_viewport">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <child>
+          <object class="GtkBox" id="random_box">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="margin-start">3</property>
+            <property name="margin-end">1</property>
+            <property name="margin-top">3</property>
+            <property name="orientation">vertical</property>
+            <property name="spacing">1</property>
+            <child>
+              <object class="GtkBox" id="random_button_box">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="spacing">3</property>
+                <child>
+                  <object class="GtkLabel" id="random_duration_label">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="margin-end">3</property>
+                    <property name="label" translatable="yes">Duration (hours):</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkSpinButton" id="random_duration_spinbutton">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="adjustment">random_duration_adjustment</property>
+                    <property name="digits">2</property>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <object class="GtkButton" id="random_spin_button">
+                    <property name="label" translatable="yes">Spin</property>
+                    <property name="width-request">60</property>
+                    <property name="visible">True</property>
+                    <property name="sensitive">False</property>
+                    <property name="can-focus">False</property>
+                    <property name="receives-default">True</property>
+                    <signal name="clicked" handler="on_random_spin_button_clicked" swapped="no"/>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="pack-type">end</property>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkTreeView" id="random_treeview">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="margin-top">3</property>
+                <property name="model">random_liststore</property>
+                <property name="search-column">0</property>
+                <child internal-child="selection">
+                  <object class="GtkTreeSelection" id="random_treeselection"/>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="genre_name_treeviewcolumn">
+                    <property name="sizing">autosize</property>
+                    <property name="min-width">180</property>
+                    <property name="title" translatable="yes">genre</property>
+                    <property name="alignment">0.5</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="genre_name_cellrenderertext"/>
+                      <attributes>
+                        <attribute name="text">0</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="genre_weight_treeviewcolumn">
+                    <property name="sizing">autosize</property>
+                    <property name="min-width">100</property>
+                    <property name="title" translatable="yes">weight</property>
+                    <property name="alignment">0.5</property>
+                    <child>
+                      <object class="GtkCellRendererSpin" id="genre_weight_cellrendererspin">
+                        <property name="editable">True</property>
+                        <property name="adjustment">genre_weight_adjustment</property>
+                        <signal name="edited" handler="on_genre_weight_cellrendererspin_edited" swapped="no"/>
+                      </object>
+                      <attributes>
+                        <attribute name="text">1</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="alltracks_treeviewcolumn">
+                    <property name="min-width">100</property>
+                    <property name="title" translatable="yes">column</property>
+                    <property name="alignment">0.5</property>
+                    <child>
+                      <object class="GtkCellRendererToggle" id="alltracks_cellrenderertoggle">
+                        <signal name="toggled" handler="on_alltracks_cellrenderertoggle_toggled" swapped="no"/>
+                      </object>
+                      <attributes>
+                        <attribute name="active">2</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn" id="spacer">
+                    <property name="expand">True</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </template>
+</interface>

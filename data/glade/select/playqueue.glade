@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated with glade 3.40.0 -->
+<interface>
+  <requires lib="gtk+" version="3.24"/>
+  <template class="playqueue_box" parent="GtkBox">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <property name="margin-start">3</property>
+    <property name="margin-end">3</property>
+    <property name="orientation">vertical</property>
+    <property name="spacing">3</property>
+    <child>
+      <object class="GtkBox" id="playqueue_durations_box">
+        <property name="can-focus">False</property>
+        <property name="margin-end">1</property>
+        <child>
+          <object class="GtkBox" id="playqueue_item_duration_box">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="spacing">6</property>
+            <child>
+              <object class="GtkLabel" id="playqueue_item_duration_label">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">Item:</property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="playqueue_item_duration_value">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="xalign">1</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox" id="playqueue_total_duration_box">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="spacing">6</property>
+            <child>
+              <object class="GtkLabel" id="playqueue_total_duration_label">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">Total:</property>
+                <property name="xalign">0</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkLabel" id="playqueue_total_duration_value">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="xalign">1</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack-type">end</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">False</property>
+        <property name="fill">True</property>
+        <property name="position">0</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkScrolledWindow" id="playqueue_scrolledwindow">
+        <property name="visible">True</property>
+        <property name="can-focus">True</property>
+        <property name="margin-bottom">3</property>
+        <property name="hexpand">True</property>
+        <property name="vexpand">True</property>
+        <property name="hscrollbar-policy">never</property>
+        <child>
+          <object class="GtkTreeView" id="playqueue_treeview">
+            <property name="name">playqueue_select-view</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <property name="headers-visible">False</property>
+            <property name="enable-search">False</property>
+            <property name="show-expanders">False</property>
+            <signal name="button-press-event" handler="on_playqueue_treeview_button_press_event" swapped="no"/>
+            <signal name="drag-data-received" handler="on_playqueue_treeview_drag_data_received" swapped="no"/>
+            <signal name="drag-motion" handler="on_playqueue_treeview_drag_motion" swapped="no"/>
+            <child internal-child="selection">
+              <object class="GtkTreeSelection" id="playqueue_treeselection"/>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="playqueue_treeviewcolumn_image">
+                <property name="sizing">autosize</property>
+                <property name="title" translatable="yes">image</property>
+                <child>
+                  <object class="GtkCellRendererPixbuf" id="playqueue_cellrendererpixbuf"/>
+                  <attributes>
+                    <attribute name="pixbuf">0</attribute>
+                  </attributes>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="GtkTreeViewColumn" id="playqueue_treeviewcolumn_text">
+                <property name="sizing">autosize</property>
+                <property name="title" translatable="yes">text</property>
+                <child>
+                  <object class="GtkCellRendererText" id="playqueue_cellrenderertext">
+                    <property name="ellipsize">end</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+      <packing>
+        <property name="expand">True</property>
+        <property name="fill">True</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
+  </template>
+</interface>
