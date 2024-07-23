@@ -106,6 +106,9 @@ class RipCD(Gtk.Box):
         sensitive = (recording_selected or changed) and disc_ready
         doublebutton.config(None, disc_ready, sensitive)
 
+        sensitive = recording_selected or disc_ready
+        options_button.sensitize_menuitem('Edit', 'Query MB', sensitive)
+
         self.cd_eject_button.set_sensitive(disc_ready)
 
     def on_recording_selection_changed(self, selection):
@@ -116,6 +119,9 @@ class RipCD(Gtk.Box):
         disc_ready = cd_drive_watcher.disc_ready
         doublebutton.config(recording_selected and not busy,
                 disc_ready, recording_selected and disc_ready)
+
+        sensitive = recording_selected or disc_ready
+        options_button.sensitize_menuitem('Edit', 'Query MB', sensitive)
 
     def on_genre_changed(self, genre_button, genre):
         disc_ready = cd_drive_watcher.disc_ready
@@ -167,7 +173,16 @@ class RipCD(Gtk.Box):
         self.raw_metadata.clear()
         worker.cancellable.reset()
 
-        self.read_cd(self.raw_extract_cb)
+        # The querymb option is insensitive unless either a recording is
+        # selected or a disc is ready. If a disc is not ready, then the
+        # other condition must be True. It is also possible that they are
+        # both True. In that case, the disc gets priority.
+        recording = getattr_from_obj_with_name('edit-left-notebook.recording')
+        if cd_drive_watcher.disc_ready:
+            discid = cd_drive_watcher.disc_id
+        else:
+            discid = recording.discids[0]
+        self.query_mb(discid, self.query_mb_cb)
 
     def on_options_edit_clear_activate(self, menuitem):
         selector = getattr_from_obj_with_name('selector')
@@ -220,6 +235,21 @@ class RipCD(Gtk.Box):
 
     def on_rip_error(self, ripper, message):
         self.queue_message(f'Rip error: {message}')
+
+    # -Query MB methods--------------------------------------------------------
+    def query_mb(self, discid, query_mb_cb):
+        def query_mb_task(discid):
+            # The top directory for this subprocess is worker, so to find
+            # common we need to add the cwd for the main process to sys.path.
+            import os
+            import sys
+            sys.path.append(os.getcwd())
+
+            from common.musicbrainz import MBQuery
+            return MBQuery.do_discid_query(discid)
+
+        if not worker.cancellable.is_cancelled():
+            worker.do_in_subprocess(query_mb_task, query_mb_cb, discid)
 
     # -Read CD methods---------------------------------------------------------
     def read_sectors(self, read_sectors_cb):
@@ -299,6 +329,13 @@ class RipCD(Gtk.Box):
             return
         self._function_runner(mbquery, 'raw')
 
+    # -Callback for query_mb---------------------------------------------------
+    def query_mb_cb(self, success, mbquery):
+        if not success:
+            self._error_extract(mbquery)
+            return
+        self._function_runner(mbquery, 'image', 'raw')
+
     # -The callbacks for read_cd all call _function_runner---------------------
     def _function_runner(self, mbquery, *function_names):
         for func_name in function_names:
@@ -325,6 +362,8 @@ class RipCD(Gtk.Box):
         track_editor._track_metadata_changed = True
 
     def _image_extract(self, mbquery):
+        if not hasattr(ripper, 'disc_num'):
+            return
         disc_num = ripper.disc_num
         image_editor = getattr_from_obj_with_name('edit-images-page')
         image_editor.get_images(mbquery, disc_num)

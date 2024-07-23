@@ -38,6 +38,7 @@ class OptionsButton(Gtk.MenuButton):
         self.sensitize_menuitem('Select', 'Remove item', False)
         self.sensitize_menuitem('Edit', 'Clear', False)
         self.sensitize_menuitem('Edit', 'Delete', False)
+        self.sensitize_menuitem('Edit', 'Query MB', False)
 
     def connect_menuitem(self, mode, option, handler):
         option_menu = self.option_menus[mode]

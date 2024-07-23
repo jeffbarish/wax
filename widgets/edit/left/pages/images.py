@@ -232,7 +232,7 @@ class ImagesEditor(Gtk.Box):
         recording = getattr_from_obj_with_name('edit-left-notebook.recording')
         for disc_num, discid in enumerate(recording.discids):
             try:
-                mbquery = MBQuery.do_discid_query(discid)
+                mbquery = MBQuery.do_image_query(discid)
             except MusicBrainzError:
                 message = 'MusicBrainz: disc not found'
                 self.message_label.queue_message(message,
