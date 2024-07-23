@@ -4,7 +4,7 @@ A program for cataloging and playing recordings.
 
 ## Installing
 
-Use the installer program to install Wax and its companion program WaxConfig. See the README in the wax-install repository for instruction on how to use the installer.
+Use the installer program to install Wax and its companion program WaxConfig. See the README in the wax-install repository for instructions on how to use the installer.
 
 ## Getting Started
 
