@@ -299,20 +299,19 @@ class FileChooser(Gtk.Box):
         revise_mode = getattr_from_obj_with_name(
                 'edit-left-notebook.revise_mode')
 
-        # If we already saved a recording (revise_mode is True), then
-        # we want the option of a fresh import to create a new recording.
-        # Import add is permissible during a rip, but not Import create.
-        label_is_add = (doublebutton.get_label() == 'Add')
-        right_sensitive = revise_mode or (self.snd_is_selected()
-                and label_is_add
-                and not ripper.is_ripping)
+        # The label can be either Import or Add if a sound file is
+        # selected. Otherwise, it must be Add.
+        label = None if self.snd_is_selected() else 1
 
-        # Import is permitted only if selection includes at least one
-        # sound file.
-        left_sensitive = self.snd_is_selected() \
-                or (label_is_add and bool(label_l))
+        # Sensitizing the right button makes it possible to select Import,
+        # but Import is permissible only if a sound file is selected and
+        # no rip is underway.
+        right_sensitive = self.snd_is_selected() and not ripper.is_ripping
 
-        doublebutton.config(None, left_sensitive, right_sensitive)
+        # Left is sensitive if something is selected.
+        left_sensitive = bool(treepaths)
+
+        doublebutton.config(label, left_sensitive, right_sensitive)
 
     def snd_is_selected(self):
         model, treepaths = self.file_chooser_treeselection.get_selected_rows()

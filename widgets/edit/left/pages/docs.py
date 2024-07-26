@@ -137,8 +137,22 @@ class DocsEditor(Gtk.Box):
             doc_data = self._read_pdf(doc_filename)
             filename = doc_filename.removeprefix(str(TRANSFER)).lstrip('/')
             new_row = (filename, NOUUID, doc_data)
-            self.my_docs_liststore.append(new_row)
-        self.docs_treeselection.select_path(Gtk.TreePath.new_first())
+            new_iter = self.my_docs_liststore.append(new_row)
+        self.docs_treeselection.select_iter(new_iter)
+
+    # For adding multiple doc files (see importfiles.add).
+    def add_docs(self, doc_filenames):
+        for doc_filename in doc_filenames:
+            doc_data = self._read_pdf(doc_filename)
+            filename = doc_filename.removeprefix(str(TRANSFER)).lstrip('/')
+            new_row = (filename, NOUUID, doc_data)
+            new_iter = self.my_docs_liststore.add(new_row)
+        self.docs_treeselection.select_iter(new_iter)
+
+        filename = Path(doc_filename).absolute().as_uri()
+        self.pdf_viewer.set_doc(filename)
+
+        self._docs_changed = True
 
     def write_docs(self, uuid):
         # Some documents might have been deleted from my_docs_liststore

@@ -136,5 +136,5 @@ class ImportFiles(Gtk.Paned):
 
         if docs:
             docs_editor = getattr_from_obj_with_name('edit-docs-page')
-            docs_editor.append_docs(docs)
+            docs_editor.add_docs(docs)
 

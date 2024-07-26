@@ -29,6 +29,17 @@ class MyDocsListstore:
         self.pdf_data.append(val[2])
         return treeiter
 
+    def add(self, val):
+        # If the file name matches, replace the pdf data.
+        for i, row in enumerate(self.pdfviewer_liststore):
+            if row[0] == val[0]:
+                self.pdf_data[i] = val[2]
+                return row.iter
+
+        # No match, so simply append val.
+        treeiter = self.append(val)
+        return treeiter
+
     def clear(self):
         self.pdfviewer_liststore.clear()
         self.pdf_data = []
