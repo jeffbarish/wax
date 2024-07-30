@@ -459,21 +459,30 @@ class Entry(Gtk.Entry):
         self.set_can_focus(False)
 
     def do_key_press_event(self, eventkey):
-        if eventkey.keyval == Gdk.KEY_Page_Down:
-            self.pageupdown_cb(self, False)
-        elif eventkey.keyval == Gdk.KEY_Page_Up:
-            self.pageupdown_cb(self, True)
-        elif eventkey.keyval == Gdk.KEY_Right:
-            # Override default handling so that right arrow moves one character
-            # to the right and shift-right arrow moves with selection.
-            extend_selection = eventkey.state & Gdk.ModifierType.SHIFT_MASK
-            ctrl = eventkey.state & Gdk.ModifierType.CONTROL_MASK
-            movement_step = (Gtk.MovementStep.VISUAL_POSITIONS,
-                    Gtk.MovementStep.WORDS)[bool(ctrl)]
-            self.do_move_cursor(self, movement_step, 1, extend_selection)
-            return True
-        else:
-            Gtk.Entry.do_key_press_event(self, eventkey)
+        match eventkey.keyval:
+            case Gdk.KEY_Page_Down:
+                self.pageupdown_cb(self, False)
+            case Gdk.KEY_Page_Up:
+                self.pageupdown_cb(self, True)
+            case Gdk.KEY_Right:
+                # Override default handling so that right arrow moves one
+                # character to the right and shift-right arrow moves with
+                # selection.
+                extend_selection = eventkey.state & Gdk.ModifierType.SHIFT_MASK
+                ctrl = eventkey.state & Gdk.ModifierType.CONTROL_MASK
+                movement_step = (Gtk.MovementStep.VISUAL_POSITIONS,
+                        Gtk.MovementStep.WORDS)[bool(ctrl)]
+                self.do_move_cursor(self, movement_step, 1, extend_selection)
+                return True
+            case Gdk.KEY_l:
+                ctrl = bool(eventkey.state & Gdk.ModifierType.CONTROL_MASK)
+                is_short_entry = hasattr(self, 'entry_long')
+                if ctrl and is_short_entry and self.entry_long.get_text():
+                    self.on_use_long_activated(None)
+                else:
+                    Gtk.Entry.do_key_press_event(self, eventkey)
+            case _:
+                Gtk.Entry.do_key_press_event(self, eventkey)
 
     def do_populate_popup(self, menu):
         # Remove the "Insert Emoji" item.
