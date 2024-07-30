@@ -222,6 +222,8 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         else:
             group.hide()
 
+        GLib.idle_add(self.metadata_groups['primary'].focus_first_entry)
+
         # Wait for other handlers to run before setting flags.
         def set_flags():
             self.primary_is_complete = bool(self.metadata_groups['primary'])

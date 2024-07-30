@@ -115,6 +115,8 @@ class Selector(Gtk.Grid):
         register_connect_request('edit-left-notebook',
                 'recording-saved', self.on_recording_saved)
         register_connect_request('edit-left-notebook',
+                'work-deleted', self.on_work_deleted)
+        register_connect_request('edit-left-notebook',
                 'recording-deleted', self.on_recording_deleted)
 
         register_connect_request('search-incremental', 'selection-changed',
@@ -479,14 +481,18 @@ class Selector(Gtk.Grid):
         control_panel_view = getattr_from_obj_with_name('control-panel.view')
         control_panel_view.play_menuitem_set_sensitive(True)
 
-    def on_recording_deleted(self, editnotebook, uuid, work_num):
-        # The user might have selected another recording, possibly one in a
-        # different genre. Search the current genre for the recording and
-        # remove it if it is found. If the select genre changed, the
-        # recording will be gone the next time the user selects the genre
-        # of the deleted recording because the metadata were deleted from
-        # the metadata files.
-        treeiter, short = self.get_short_by_uuid(uuid, work_num)
+    # Edit option Delete emits work-deleted; delete only the selected work.
+    def on_work_deleted(self, editnotebook, genre, uuid, work_num):
+        # The user might have selected another work, possibly one in a
+        # different genre. If the select genre changed, the recording will
+        # be gone the next time the user selects the genre of the deleted
+        # recording because the metadata were deleted from the metadata
+        # files. If the select genre did not change, search the current
+        # genre for the work and remove it if it is found.
+        if genre != self.recording_selector.model.genre:
+            return
+
+        treeiter, _ = self.get_short_by_uuid(uuid, work_num)
         if treeiter is not None:
             model = self.recording_selector.model
             work_editor = getattr_from_obj_with_name('edit-work-page')
@@ -498,10 +504,30 @@ class Selector(Gtk.Grid):
         # Update the filter button menus as the content of the columns
         # might have changed.
         self.update_filter_button_menus(self.filter_button_box)
+
         with stop_emission(self.recording_selection, 'changed'):
             self.recording_selection.unselect_all()
 
         GLib.idle_add(self.track_scrolled_window.hide)
+
+    # abort emits recording-deleted; all works with the given uuid in the
+    # current genre should be deleted. editnotebook deletes works in other
+    # genres from short files, so they will not appear when the user selects
+    # one of those genres.
+    def on_recording_deleted(self, editnotebook, uuid):
+        model = self.recording_selector.model
+
+        # Get paths for all rows with row_uuid == uuid.
+        delete_paths = [row.path for row in model if row[1] == uuid]
+
+        work_editor = getattr_from_obj_with_name('edit-work-page')
+        with stop_emission(self.recording_selection, 'changed'), \
+                work_editor.freeze_notify():
+            for path in reversed(delete_paths):
+                row_iter = model.get_iter(path)
+                model.remove(row_iter)
+
+        self.recording_selection.unselect_all()
 
     def on_track_started(self, player, tracktuple, grouptuple,
             track_duration, more_tracks, uuid):

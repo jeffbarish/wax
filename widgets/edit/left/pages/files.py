@@ -74,6 +74,7 @@ class FilesEditor(Gtk.Box):
 
     def on_recording_saved(self, editnotebook, genre):
         self.clear()
+
         recording = editnotebook.recording
         work_num = editnotebook.work_num
         work = recording.works[work_num]

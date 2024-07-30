@@ -312,6 +312,7 @@ class SecondaryWorkMetadataField(WorkMetadataField):
         self.entries.append((entry,))
         entry.show()
         self.value_entry = entry
+
         entry.grab_focus_without_selecting()  # focus the new entry
 
     def attach_completer(self, key):

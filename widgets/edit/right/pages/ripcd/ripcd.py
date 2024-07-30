@@ -155,16 +155,6 @@ class RipCD(Gtk.Box):
         self.mbquery = None
         worker.cancellable.cancel()
         self.raw_metadata.clear()
-
-        # If we aborted a re-rip of the one CD in the recording then
-        # "Add CD" is no longer meaningful.
-        if ripper.disc_num == 0 and not ripper.rerip:
-            selector = getattr_from_obj_with_name('selector')
-            model = selector.recording_selector.model
-            recording_selected = model.recording is not None
-            doublebutton.config(recording_selected, True,
-                    recording_selected)
-
         self._initialize_controls()
 
     # -Option handlers---------------------------------------------------------

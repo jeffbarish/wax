@@ -5,7 +5,7 @@ import importlib
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, GObject
+from gi.repository import Gtk, Gdk, GLib, GObject
 
 if __name__ == '__main__':
     from os.path import dirname
@@ -61,6 +61,7 @@ class PlayNotebook(Gtk.Notebook):
                     self.emit('page', False)
                 case Gdk.KEY_Page_Up:
                     self.emit('page', True)
+            GLib.idle_add(self.grab_focus)
 
     @idle_add
     def on_recording_selection_changed(self, selection):

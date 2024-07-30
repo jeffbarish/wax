@@ -43,7 +43,11 @@ class EditNotebook(Gtk.Notebook):
         pass
 
     @GObject.Signal
-    def recording_deleted(self, uuid: str, work_num: int):
+    def work_deleted(self, genre: str, uuid: str, work_num: int):
+        pass
+
+    @GObject.Signal
+    def recording_deleted(self, uuid: str):
         pass
 
     _changed = QuietProperty(type=bool, default=False)
@@ -176,11 +180,17 @@ class EditNotebook(Gtk.Notebook):
 
         self.clear_or_repopulate_from_selection()
 
+    # The delete option deletes the work that is currently selected (not the
+    # entire recording). However, if no work remains after the deletion, then
+    # delete the recording.
     def on_options_edit_delete_activate(self, menuitem):
         works = self.recording.works
+        work = works[self.work_num]
         del works[self.work_num]
-        self.delete_work()
-        if len(works) == 0:
+
+        self.delete_work_from_metadata_files()
+
+        if not works:
             self.delete_sound()
             self.delete_notes()
             self.delete_images()
@@ -194,9 +204,17 @@ class EditNotebook(Gtk.Notebook):
 
             options_button.sensitize_menuitem('Edit', 'Delete', False)
 
-        # Wait for all option_delete activate handlers to run.
-        GLib.idle_add(self.emit, 'recording-deleted',
-                self.recording.uuid, self.work_num)
+        self.revise_mode = False
+
+        # work-deleted triggers deletion of the work in selector.
+        # model.recording does not change until the work is deleted. Until
+        # the work is deleted, clear_or_repopulate_from_selection does not
+        # clear the display.
+        self.emit(
+            'work-deleted', work.genre, self.recording.uuid, self.work_num)
+
+        # Wait for the work-deleted handler in selector to run.
+        GLib.idle_add(self.clear_or_repopulate_from_selection)
 
     def on_abort_button_clicked(self, button):
         if ripper.rerip:
@@ -207,15 +225,24 @@ class EditNotebook(Gtk.Notebook):
         if ripper.disc_num == 0:
             if self.revise_mode:
                 # We are doing (or did) an initial rip of disc 0 and we saved
-                # a recording. All changes to files need to be reversed.
+                # at least one work. All changes to files need to be reversed.
                 self.delete_notes()
                 self.delete_images()
 
+                # If we get here, then the abort applies to an initial
+                # rip of disc 0. ripper deletes all the sound files, so
+                # we need to delete *all* works that were saved. There
+                # could be works in genres other than the current one.
+                # We get a list of relevant genres from the works dict
+                # in long. selector.on_recording_deleted deletes all
+                # the works for uuid in the current select genre.
+                self.delete_short_metadata(edit.uuid)
                 self.delete_long_metadata(edit.uuid)
-                self.delete_short_metadata(self.genre, edit.uuid)
 
-                GLib.idle_add(self.emit, 'recording-deleted',
-                        self.recording.uuid, self.work_num)
+                self.revise_mode = False
+
+                GLib.idle_add(self.emit,
+                        'recording-deleted', self.recording.uuid)
             else:
                 # If the user did not save the recording before clicking
                 # abort then it is still possible to go back to the original
@@ -528,10 +555,6 @@ class EditNotebook(Gtk.Notebook):
                     completer_fo.write('\n'.join(lines))
                     completer_fo.write('\n')
 
-    def write_long_metadata(self, recording):
-        with shelve.open(LONG, 'w') as recording_shelf:
-            recording_shelf[recording.uuid] = recording
-
     def delete_long_metadata(self, uuid):
         with shelve.open(LONG, 'w') as recording_shelf:
             try:
@@ -542,6 +565,38 @@ class EditNotebook(Gtk.Notebook):
                 # If we were reripping then an entry was created previously
                 # which needs to be deleted now.
                 pass
+
+    def delete_short_metadata(self, uuid):
+        with shelve.open(LONG, 'w') as recording_shelf:
+            recording = recording_shelf[uuid]
+
+        # genres is the set of genres in which works for uuid appear.
+        genres = {work.genre for work in recording.works.values()}
+
+        # Delete all works in the short file for genre for uuid.
+        for genre in genres:
+            self.delete_short_metadata_from_genre(genre, uuid)
+
+    def delete_short_metadata_from_genre(self, genre, uuid):
+        short_path = Path(SHORT, genre)
+        tmp_path = Path(str(short_path) + '.tmp')
+        with open(short_path, 'rb') as short_fo, \
+                open(tmp_path, 'wb') as tmp_fo:
+            while True:
+                try:
+                    data_in = pickle.load(short_fo)
+                except EOFError:
+                    break
+                metadata, uuid_in, work_num_in = data_in
+                if uuid_in != uuid:
+                    pickle.dump(data_in, tmp_fo)
+
+        # Replace the metadata file with the tmp file.
+        os.rename(tmp_path, short_path)
+
+    def write_long_metadata(self, recording):
+        with shelve.open(LONG, 'w') as recording_shelf:
+            recording_shelf[recording.uuid] = recording
 
     def write_short_metadata(self, work_short, genre, uuid, work_num):
         # Read pickles from the short metadata file and write them to
@@ -568,23 +623,6 @@ class EditNotebook(Gtk.Notebook):
                 # Append short metadata if uuid did not match an
                 # existing recording.
                 pickle.dump(new_data_out, tmp_fo)
-
-        # Replace the metadata file with the tmp file.
-        os.rename(tmp_path, short_path)
-
-    def delete_short_metadata(self, genre, uuid):
-        short_path = Path(SHORT, genre)
-        tmp_path = Path(str(short_path) + '.tmp')
-        with open(short_path, 'rb') as short_fo, \
-                open(tmp_path, 'wb') as tmp_fo:
-            while True:
-                try:
-                    data_in = pickle.load(short_fo)
-                except EOFError:
-                    break
-                metadata, uuid_in, work_num_in = data_in
-                if uuid_in != uuid:
-                    pickle.dump(data_in, tmp_fo)
 
         # Replace the metadata file with the tmp file.
         os.rename(tmp_path, short_path)
@@ -645,7 +683,7 @@ class EditNotebook(Gtk.Notebook):
             edit_textview = getattr_from_obj_with_name(textview_name)
             edit_textview.clear()
 
-    def delete_work(self):
+    def delete_work_from_metadata_files(self):
         # The Delete option is sensitive only when a recording is selected in
         # Select mode. Therefore, self.recording is never None here.
         if self.recording is None:
@@ -676,6 +714,7 @@ class EditNotebook(Gtk.Notebook):
             recording = recording_shelf[uuid]
             works = recording.works
             del works[work_num]
+
             # If no works remain after deleting the current work, then delete
             # the entire recording.
             if works:

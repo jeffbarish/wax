@@ -45,8 +45,8 @@ class SearchSibling(Gtk.Box):
                 self.on_search_incremental_selection_changed)
         register_connect_request('edit-left-notebook', 'recording-saved',
                 self.on_recording_saved)
-        register_connect_request('edit-left-notebook', 'recording-deleted',
-                self.on_recording_deleted)
+        register_connect_request('edit-left-notebook', 'work-deleted',
+                self.on_work_deleted)
         register_connect_request('playqueue_select.playqueue_treeselection',
                 'changed', self.on_playqueue_select_selection_changed)
 
@@ -169,7 +169,7 @@ class SearchSibling(Gtk.Box):
         selector = getattr_from_obj_with_name('selector')
         self.on_recording_selection_changed(selector.recording_selection)
 
-    def on_recording_deleted(self, editnotebook, uuid, work_num):
+    def on_work_deleted(self, editnotebook, genre, uuid, work_num):
         with signal_blocker(self.sibling_treeselection, 'changed'):
             self.sibling_liststore.clear()
 

@@ -119,8 +119,7 @@ class RecordingSelector:
         # stop_emission context, so this handler does not get triggered then.
         model_filter, treeiter = selection.get_selected()
         treeiter = self.model.convert_iter_to_child_iter(treeiter)
-        if treeiter is not None:
-            self.model.read_long_metadata(treeiter)
+        self.model.read_long_metadata(treeiter)
 
     # Double-click switches to play mode.
     def on_button_press_event(self, treeview, event):

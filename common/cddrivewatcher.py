@@ -1,8 +1,10 @@
 """Poll the disc drive and set a flag when a disc is present. Get the
 disc id."""
 
+import discid
 import fcntl
 import os
+import sys
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -17,6 +19,7 @@ class CDDriveWatcher(GObject.Object):
 
     def __init__(self):
         super().__init__()
+        self.disc_id = None
 
         # 0x5326 = CDROM_DRIVE_STATUS (see linux/cdrom.h).
         # Status values:
@@ -29,12 +32,14 @@ class CDDriveWatcher(GObject.Object):
                 fd = os.open(CDROM_DRIVE, os.O_RDONLY | os.O_NONBLOCK)
             except FileNotFoundError:
                 self.disc_ready = False
+                self.disc_id = None
                 return True
 
             try:
                 status = fcntl.ioctl(fd, CDROM_DRIVE_STATUS)
             except OSError:
                 self.disc_ready = False
+                self.disc_id = None
                 return True
 
             try:
@@ -45,11 +50,13 @@ class CDDriveWatcher(GObject.Object):
             # Writing to self.disc_ready triggers notify even if the value
             # does not change, so write only if the value actually changes.
             # I could use QuietProperty here except that I need to be sure
-            # that get_discid is called before disc_ready changes.
+            # that set_discid is called before disc_ready changes.
             disc_ready = (status == 4)
             if self.disc_ready != disc_ready:
                 if disc_ready:
-                    self.get_discid()
+                    self.set_discid()
+                else:
+                    self.disc_id = None
                 self.disc_ready = disc_ready
 
             return True
@@ -59,14 +66,13 @@ class CDDriveWatcher(GObject.Object):
     def get_name(self):
         return 'cd-drive-watcher'
 
-    def get_discid(self):
-        import os
-        import sys
+    def set_discid(self):
         cwd = os.getcwd()
-        packages = os.path.join(cwd, '.venv/lib/python3.8/site-packages/')
+        python_version = f'python3.{sys.version_info.minor}/site-packages/'
+        packages = os.path.join(cwd, '.venv/lib', python_version,
+                'site-packages')
         sys.path.extend((cwd, packages))
 
-        import discid
         disc = discid.read()
         self.disc_id = disc.id
 

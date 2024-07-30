@@ -108,7 +108,7 @@ class Playqueue(Gtk.Box):
         register_connect_request('edit-left-notebook',
                 'recording-saved', self.on_recording_saved)
         register_connect_request('edit-left-notebook',
-                'recording-deleted', self.on_recording_deleted)
+                'work-deleted', self.on_work_deleted)
         register_connect_request('search-incremental',
                 'selection-changed',
                 self.on_search_incremental_selection_changed)
@@ -385,7 +385,7 @@ class Playqueue(Gtk.Box):
                             getattr_from_obj_with_name('playqueue_play')
                     playqueue_play.update_image(row.path[0], thumbnail)
 
-    def on_recording_deleted(self, editnotebook, uuid, work_num):
+    def on_work_deleted(self, editnotebook, genre, uuid, work_num):
         for i, row in enumerate(playqueue_model_with_attrs):
             if row.uuid == uuid:
                 del playqueue_model[i]

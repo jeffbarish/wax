@@ -65,8 +65,8 @@ class SearchIncremental(Gtk.Box):
 
         register_connect_request('edit-left-notebook', 'recording-saved',
                 self.on_recording_saved)
-        register_connect_request('edit-left-notebook', 'recording-deleted',
-                self.on_recording_deleted)
+        register_connect_request('edit-left-notebook', 'work-deleted',
+                self.on_work_deleted)
         register_connect_request('selector.recording_selection', 'changed',
                 self.on_recording_selection_changed)
         register_connect_request('search-sibling', 'selection-changed',
@@ -108,7 +108,7 @@ class SearchIncremental(Gtk.Box):
         if text:
             self.first_match_text, self.first_match = self.start(text)
 
-    def on_recording_deleted(self, editnotebook, uuid, work_num):
+    def on_work_deleted(self, editnotebook, genre, uuid, work_num):
         text = normalize(self.incremental_entry.props.text)
         if text:
             self.first_match_text, self.first_match = self.start(text)

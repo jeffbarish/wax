@@ -174,11 +174,12 @@ class NonceWorkMetadataGroup(WorkMetadataGroup):
             # values for all the rows (there is only one tuple in the list).
             # The next grabs the first (and only) such tuple. If all of the
             # values are nil, remove the field. field will not have attribute
-            # key if no key has been set. In that case, the field was not
-            # mapped.
+            # key if key was never set. In that case, the field also was not
+            # mapped. If it was set but then deleted, then the attribute has
+            # value '' and it has already been removed from metadata_fields
+            # and all_keys (in fields.on_key_changed), so it is necessary
+            # only to remove the field from vbox.
             key = getattr(field, 'key', None)
             if not key or not any(next(zip(*field.values()))):
                 self.remove_metadata_field(field)
-                if key is not None:
-                    field.unmap_field()
 

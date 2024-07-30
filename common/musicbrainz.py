@@ -50,7 +50,7 @@ class MBQuery:
         return self.metadata.get(item, [''])
 
     @classmethod
-    def do_discid_query(cls, disc_id):
+    def do_image_query(cls, disc_id):
         """Just get cover art for the recording with the given disc_id. We
         do the discid_search to get the mbid and asin for the recording,
         which is all we need to search for cover art."""
@@ -60,10 +60,30 @@ class MBQuery:
                 need_asin=True)
         return mbquery
 
+    @classmethod
+    def do_discid_query(cls, disc_id):
+        mbquery = cls(None)
+        mbquery.disc_id = disc_id
+        mbquery.release, medium = mbquery.discid_search(disc_id,
+                need_asin=False)
+
+        # For a discid query there is no disc, so instead of providing
+        # disc.tracks to mbid_search, I provide medium['track-list']. That
+        # track list makes it possible to search for involved people, but
+        # it does not contain sector information. Accordingly, I turn off
+        # the code for computing tracks, which I do not need in this case
+        # anyway.
+        track_list = medium['track-list']
+        mbquery.mbid_search(disc_id, medium, track_list, mbquery.release['id'],
+                need_sectors=False)
+
+        return mbquery
+
     def do_query(self, disc):
         self.disc_id = disc_id = disc.id
         self.release, medium = self.discid_search(disc_id, need_asin=False)
-        self.mbid_search(disc_id, medium, disc.tracks, self.release['id'])
+        self.mbid_search(disc_id, medium, disc.tracks, self.release['id'],
+                need_sectors=True)
 
     def discid_search(self, disc_id, need_asin):
         """Search by discid first to get the mbid."""
@@ -83,7 +103,7 @@ class MBQuery:
 
         return self._get_release(disc, disc_id, need_asin)
 
-    def mbid_search(self, disc_id, medium, disc_tracks, mbid):
+    def mbid_search(self, disc_id, medium, disc_tracks, mbid, need_sectors):
         """Search by mbid to get all the metadata we seek."""
         includes = ['recording-level-rels', 'recordings', 'work-rels',
                 'work-level-rels', 'artist-rels', 'artists', 'discids']
@@ -118,13 +138,14 @@ class MBQuery:
             val.sort(key=lambda v: tracknumbers[(key, v)])
         self.tracknumbers = tracknumbers
 
-        tracks = []
-        for track, disc_track in zip(track_list, disc_tracks):
-            recording = track['recording']
-            trackSectors = disc_track.sectors
-            trk = Track(recording['title'], trackSectors / 75.0)
-            tracks.append(trk)
-        self.tracks = tracks
+        if need_sectors:
+            tracks = []
+            for track, disc_track in zip(track_list, disc_tracks):
+                recording = track['recording']
+                trackSectors = disc_track.sectors
+                trk = Track(recording['title'], trackSectors / 75.0)
+                tracks.append(trk)
+            self.tracks = tracks
 
         metadata['artist'] = artist_list
         for key in ('date', 'asin', 'album'):
