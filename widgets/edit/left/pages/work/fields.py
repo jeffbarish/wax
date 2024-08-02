@@ -158,7 +158,15 @@ class WorkMetadataField(Gtk.Grid):
         def match_func(completion, value, tree_iter):
             model = completion.get_model()
             name = normalize(model[tree_iter][0])
-            return any(n.startswith(value) for n in name.split())
+
+            # If there is a space in value, assume that the user is
+            # specifying the full name (e.g., "John Elio" for "John
+            # Eliot Gardner"). Otherwise, let "Elio" match the full name.
+            # Note that "Eliot Gar" will not match.
+            if ' ' in value:
+                return name.startswith(value)
+            else:
+                return any(n.startswith(value) for n in name.split())
 
         completion = Gtk.EntryCompletion()
         completion.set_model(model)
@@ -473,6 +481,16 @@ class Entry(Gtk.Entry):
                 movement_step = (Gtk.MovementStep.VISUAL_POSITIONS,
                         Gtk.MovementStep.WORDS)[bool(ctrl)]
                 self.do_move_cursor(self, movement_step, 1, extend_selection)
+                return True
+            case Gdk.KEY_Left:
+                # Override default handling so that left arrow moves one
+                # character to the left and shift-left arrow moves with
+                # selection.
+                extend_selection = eventkey.state & Gdk.ModifierType.SHIFT_MASK
+                ctrl = eventkey.state & Gdk.ModifierType.CONTROL_MASK
+                movement_step = (Gtk.MovementStep.VISUAL_POSITIONS,
+                        Gtk.MovementStep.WORDS)[bool(ctrl)]
+                self.do_move_cursor(self, movement_step, -1, extend_selection)
                 return True
             case Gdk.KEY_l:
                 ctrl = bool(eventkey.state & Gdk.ModifierType.CONTROL_MASK)
