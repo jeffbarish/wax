@@ -299,6 +299,7 @@ class EditNotebook(Gtk.Notebook):
 
         self.genre = genre  # self.genre is a local copy of the select genre
 
+        self.clear_all_forms()
         self.set_sensitive(False)
 
     def on_recording_selection_changed(self, selection):
