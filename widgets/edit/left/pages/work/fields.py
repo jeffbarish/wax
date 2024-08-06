@@ -14,6 +14,14 @@ from common.utilities import debug
 from widgets import config
 from .abbreviators import abbreviator
 
+# Create Gtk.EntryCompletion models for every file in COMPLETERS.
+completions_models = {}
+for completer_fn in COMPLETERS.iterdir():
+    completions_models[completer_fn.name] = model = Gtk.ListStore(str)
+    with open(completer_fn, 'rt', encoding='utf-8') as completer_fo:
+        for line in completer_fo.read().splitlines():
+            model.append((line,))
+
 class WorkMetadataField(Gtk.Grid):
     @GObject.Signal(flags=GObject.SignalFlags.RUN_FIRST)
     def work_metadata_field_changed(self):
@@ -23,6 +31,7 @@ class WorkMetadataField(Gtk.Grid):
         super().__init__()
         self.group = group
         self.entries = []  # list of tuples (which might have len 1) of entries
+
         self.set_margin_start(3)
         self.set_margin_bottom(3)
         self.set_margin_end(2)
@@ -37,14 +46,6 @@ class WorkMetadataField(Gtk.Grid):
                 self.on_work_metadata_field_changed)
 
         self.new_metadata_field()
-
-        # Create models for Gtk.EntryCompletion.
-        self.completers = completers = {}
-        for completer_fn in COMPLETERS.iterdir():
-            completers[completer_fn.name] = model = Gtk.ListStore(str)
-            with open(completer_fn, 'rt', encoding='utf-8') as completer_fo:
-                for line in completer_fo.read().splitlines():
-                    model.append((line,))
 
     @classmethod
     def get(cls, key):
@@ -73,10 +74,6 @@ class WorkMetadataField(Gtk.Grid):
         self.key_label.set_text(key)
 
         self.metadata_fields[key] = self
-
-        # Now that this field has a key associated with it, it is possible
-        # to attach a completer to the entry.
-        self.attach_completer(key)
 
     def populate(self, values):
         self.clear_values()
@@ -144,13 +141,13 @@ class WorkMetadataField(Gtk.Grid):
             yield tuple(entry.get_text() for entry in entries)
 
     def make_completion(self, key):
-        model = self.completers.get(key, None)
+        model = completions_models.get(key, None)
         if model is None:
-            return
+            return None
         else:
             enabled = config['completers'][key][0]
             if not enabled:
-                return
+                return None
 
         def normalize(text):
             text = text.lower()
@@ -187,7 +184,6 @@ class WorkMetadataField(Gtk.Grid):
     def on_button_right_clicked(self, button):
         self.move_buttons_down()
         self.append_value_field()
-        self.attach_completer(self.key)
 
     def on_button_down_clicked(self, button):
         # As I call this method on PageUp, it is possible to come here when
@@ -215,9 +211,6 @@ class WorkMetadataField(Gtk.Grid):
     def remove_last_value_field(self):
         raise NotImplementedError('Define in subclass')
 
-    def attach_completer(self, key):
-        raise NotImplementedError('Define in subclass')
-
 class PrimaryWorkMetadataField(WorkMetadataField):
     metadata_fields = {}
 
@@ -227,6 +220,16 @@ class PrimaryWorkMetadataField(WorkMetadataField):
         # specified.
         return any(all(bool(e.get_text()) for e in entry)
                 for entry in self.entries)
+
+    def set_key(self, key):
+        super().set_key(key)
+
+        # The first value entries already exist by the time the key gets set
+        # (see new_metadata_field), so we need to set the completion for the
+        # first entry_long here.
+        if completion := self.make_completion(key):
+            entry_long, entry_short = self.entries[0]
+            entry_long.set_completion(completion)
 
     def set_column_width(self, width):
         for entry_long, entry_short in self.entries:
@@ -243,6 +246,11 @@ class PrimaryWorkMetadataField(WorkMetadataField):
         entries = entry_long, entry_short = (Entry(self, cb), Entry(self, cb))
         self.entries.append(entries)
         entry_short.entry_long = entry_long
+
+        if hasattr(self, 'key'):
+            completion = self.make_completion(self.key)
+            if completion:
+                entry_long.set_completion(completion)
 
         # Need hexpand True for entry_long (default) but False for
         # entry_short so that entry_short assumes the assigned width.
@@ -274,14 +282,6 @@ class PrimaryWorkMetadataField(WorkMetadataField):
 
         entry_long.grab_focus_without_selecting()
 
-    def attach_completer(self, key):
-        completion = self.make_completion(key)
-
-        # Attach a completer to the new entry_long every time we append a
-        # value field.
-        entry_long, entry_short = self.entries[-1]
-        entry_long.set_completion(completion)
-
     def clear_value_field(self):
         self.set_text_first_value(('', ''))
 
@@ -308,6 +308,16 @@ class PrimaryWorkMetadataField(WorkMetadataField):
 class SecondaryWorkMetadataField(WorkMetadataField):
     metadata_fields = {}
 
+    def set_key(self, key):
+        super().set_key(key)
+
+        # The first value entry already exists by the time the key gets set
+        # (see new_metadata_field), so we need to set the completion for the
+        # first entry here.
+        if completion := self.make_completion(key):
+            entry, = self.entries[0]
+            entry.set_completion(completion)
+
     def append_value_field(self, value=('',)):
         self.button_right.set_sensitive(any(value))
 
@@ -321,15 +331,12 @@ class SecondaryWorkMetadataField(WorkMetadataField):
         entry.show()
         self.value_entry = entry
 
+        if hasattr(self, 'key'):
+            completion = self.make_completion(self.key)
+            if completion:
+                entry.set_completion(completion)
+
         entry.grab_focus_without_selecting()  # focus the new entry
-
-    def attach_completer(self, key):
-        completion = self.make_completion(key)
-
-        # Attach a completer to the new entry_long every time we append a
-        # value field.
-        entry, = self.entries[-1]
-        entry.set_completion(completion)
 
     def remove_last_value_field(self):
         entry, = self.entries.pop()
@@ -351,6 +358,7 @@ class NonceWorkMetadataField(SecondaryWorkMetadataField):
             return ''
         return ', '.join(repr(t) for t in self.values())
 
+    # Override set_key so that nonce fields do not have a completion.
     def set_key(self, key):
         self.key = key
         with stop_emission(self, 'work-metadata-field-changed'):

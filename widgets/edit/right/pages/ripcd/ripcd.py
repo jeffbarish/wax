@@ -156,6 +156,7 @@ class RipCD(Gtk.Box):
         worker.cancellable.cancel()
         self.raw_metadata.clear()
         self._initialize_controls()
+        self.message_label.hide()
 
     # -Option handlers---------------------------------------------------------
     def on_options_edit_querymb_activate(self, menuitem):
