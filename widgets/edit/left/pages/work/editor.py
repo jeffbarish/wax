@@ -295,7 +295,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         for group in self.metadata_groups.values():
             group.clear()
         self.metadata_groups['nonce'].hide()
-        self.primary_complete = False
+        self.primary_is_complete = False
         self._work_metadata_changed = False
         self._edit_genre_changed = False
 

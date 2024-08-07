@@ -68,28 +68,21 @@ class WorkMetadataGroup(Gtk.Frame):
         return self.field_type.metadata_fields.__iter__()
 
     def create(self, keys, widths=None):
-        vbox = self.get_child()
-        fields = vbox.get_children()
-
-        # Reuse existing fields until depleted, then create new fields.
-        field_iter = iter(fields)
         self.field_type.clear()
+
+        vbox = self.get_child()
+        for field in vbox.get_children():
+            vbox.remove(field)
+            field.destroy()
+
         for key in keys:
-            try:
-                field = next(field_iter)
-            except StopIteration:
-                field = self.field_type(self)
-                field.connect('work-metadata-field-changed',
-                        self.on_work_metadata_field_changed)
-                vbox.pack_start(field, *NOEXPAND)
+            field = self.field_type(self)
+            field.connect('work-metadata-field-changed',
+                    self.on_work_metadata_field_changed)
+            vbox.pack_start(field, *NOEXPAND)
 
             field.set_key(key)
-            field.clear_values()
             field.show_all()
-
-        # If there are more fields than keys, hide the remaining ones.
-        for field in fields[len(keys):]:
-            field.hide()
 
         if self.metadata_class == 'primary':
             self.focus_first_entry()

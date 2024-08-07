@@ -76,7 +76,7 @@ class WorkMetadataField(Gtk.Grid):
         self.metadata_fields[key] = self
 
     def populate(self, values):
-        self.clear_values()
+        self.clear_values()  # remove superfluous entries
         self.set_text_first_value(values[0])
         for value in values[1:]:
             self.move_buttons_down()
@@ -248,8 +248,7 @@ class PrimaryWorkMetadataField(WorkMetadataField):
         entry_short.entry_long = entry_long
 
         if hasattr(self, 'key'):
-            completion = self.make_completion(self.key)
-            if completion:
+            if completion := self.make_completion(self.key):
                 entry_long.set_completion(completion)
 
         # Need hexpand True for entry_long (default) but False for
