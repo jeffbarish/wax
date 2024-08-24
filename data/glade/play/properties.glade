@@ -2,7 +2,7 @@
 <!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
-  <object class="GtkListStore" id="auto_props_1_liststore">
+  <object class="GtkListStore" id="props_rec_liststore">
     <columns>
       <!-- column-name key -->
       <column type="gchararray"/>
@@ -10,7 +10,7 @@
       <column type="PyObject"/>
     </columns>
   </object>
-  <object class="GtkListStore" id="auto_props_2_liststore">
+  <object class="GtkListStore" id="props_wrk_liststore">
     <columns>
       <!-- column-name key -->
       <column type="gchararray"/>
@@ -34,26 +34,26 @@
     <property name="orientation">vertical</property>
     <property name="row-spacing">12</property>
     <child>
-      <object class="GtkTreeView" id="auto_props_1_treeview">
+      <object class="GtkTreeView" id="props_rec_treeview">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
         <property name="hexpand">True</property>
-        <property name="model">auto_props_1_liststore</property>
+        <property name="model">props_rec_liststore</property>
         <property name="headers-visible">False</property>
         <property name="enable-search">False</property>
         <property name="show-expanders">False</property>
         <child internal-child="selection">
-          <object class="GtkTreeSelection" id="auto_props_1_treeselection">
+          <object class="GtkTreeSelection" id="props_rec_treeselection">
             <property name="mode">none</property>
           </object>
         </child>
         <child>
-          <object class="GtkTreeViewColumn" id="auto_props_1_treeviewcolumn_key">
+          <object class="GtkTreeViewColumn" id="props_rec_treeviewcolumn_key">
             <property name="sizing">fixed</property>
             <property name="fixed-width">125</property>
             <property name="title" translatable="yes">key</property>
             <child>
-              <object class="GtkCellRendererText" id="auto_props_1_cellrenderer_key">
+              <object class="GtkCellRendererText" id="props_rec_cellrenderer_key">
                 <property name="background-gdk">#424242424242</property>
                 <property name="font">Monospace</property>
                 <property name="size-points">8</property>
@@ -65,11 +65,11 @@
           </object>
         </child>
         <child>
-          <object class="GtkTreeViewColumn" id="auto_props_1_treeviewcolumn_value">
+          <object class="GtkTreeViewColumn" id="props_rec_treeviewcolumn_value">
             <property name="sizing">autosize</property>
             <property name="title" translatable="yes">value</property>
             <child>
-              <object class="GtkCellRendererText" id="auto_props_1_cellrenderer_value">
+              <object class="GtkCellRendererText" id="props_rec_cellrenderer_value">
                 <property name="background-gdk">#424242424242</property>
               </object>
             </child>
@@ -82,25 +82,25 @@
       </packing>
     </child>
     <child>
-      <object class="GtkTreeView" id="auto_props_2_treeview">
+      <object class="GtkTreeView" id="props_wrk_treeview">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="model">auto_props_2_liststore</property>
+        <property name="model">props_wrk_liststore</property>
         <property name="headers-visible">False</property>
         <property name="enable-search">False</property>
         <property name="show-expanders">False</property>
         <child internal-child="selection">
-          <object class="GtkTreeSelection" id="auto_props_2_treeselection">
+          <object class="GtkTreeSelection" id="props_wrk_treeselection">
             <property name="mode">none</property>
           </object>
         </child>
         <child>
-          <object class="GtkTreeViewColumn" id="auto_props_2_treeviewcolumn_key">
+          <object class="GtkTreeViewColumn" id="props_wrk_treeviewcolumn_key">
             <property name="sizing">fixed</property>
             <property name="fixed-width">125</property>
             <property name="title" translatable="yes">key</property>
             <child>
-              <object class="GtkCellRendererText" id="auto_props_2_cellrenderer_key">
+              <object class="GtkCellRendererText" id="props_wrk_cellrenderer_key">
                 <property name="background-gdk">#424242424242</property>
                 <property name="font">Monospace</property>
                 <property name="size-points">8</property>
@@ -112,11 +112,11 @@
           </object>
         </child>
         <child>
-          <object class="GtkTreeViewColumn" id="auto_props_2_treeviewcolumn_value">
+          <object class="GtkTreeViewColumn" id="props_wrk_treeviewcolumn_value">
             <property name="sizing">autosize</property>
             <property name="title" translatable="yes">value</property>
             <child>
-              <object class="GtkCellRendererText" id="auto_props_2_cellrenderer_value">
+              <object class="GtkCellRendererText" id="props_wrk_cellrenderer_value">
                 <property name="background-gdk">#424242424242</property>
               </object>
             </child>

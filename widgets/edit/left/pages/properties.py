@@ -2,6 +2,7 @@
 
 import itertools
 from datetime import datetime
+from typing import List
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -10,7 +11,7 @@ from gi.repository import Gtk, GObject, GLib
 from common.connector import getattr_from_obj_with_name
 from common.connector import register_connect_request
 from common.connector import QuietProperty
-from common.constants import AUTO_PROPS_1, AUTO_PROPS_2, NOEXPAND
+from common.constants import PROPS_REC, PROPS_WRK, NOEXPAND
 from common.utilities import debug
 from ripper import ripper
 from widgets import config
@@ -35,7 +36,7 @@ class PropertiesEditor(Gtk.ScrolledWindow):
         vbox.set_spacing(1)
 
         self.entries = {}
-        categories = (AUTO_PROPS_1, AUTO_PROPS_2, USER_PROPS)
+        categories = (PROPS_REC, PROPS_WRK, USER_PROPS)
         for key in itertools.chain.from_iterable(categories):
             hbox = Gtk.Box()
             hbox.set_orientation(Gtk.Orientation.HORIZONTAL)
@@ -103,9 +104,9 @@ class PropertiesEditor(Gtk.ScrolledWindow):
         # by editnotebook.clear_all_forms runs first.
         GLib.idle_add(self.populate, props)
 
-    def populate(self, properties):
+    def populate(self, props_rec: List, props_wrk: List):
         signal_id = GObject.signal_lookup('changed', Gtk.Entry)
-        for key, value in properties:
+        for key, value in itertools.chain(props_rec, props_wrk):
             entry = self.entries[key]
             handler_id = GObject.signal_handler_find(entry,
                     GObject.SignalMatchType.ID, signal_id,
@@ -124,9 +125,12 @@ class PropertiesEditor(Gtk.ScrolledWindow):
                 entry.set_text('')
         self._properties_changed = False
 
-    def get_metadata(self):
-        return [(key, (entry.get_text(),))
-                for key, entry in self.entries.items()]
+    def get_props(self):
+        props = {key: (entry.get_text(),)
+                for key, entry in self.entries.items()}
+        props_rec = [(key, props.pop(key)) for key in PROPS_REC]
+        props_wrk = list(props.items())
+        return props_rec, props_wrk
 
 
 page_widget = PropertiesEditor()

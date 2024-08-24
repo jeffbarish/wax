@@ -15,6 +15,7 @@ class WorkTuple(NamedTuple):
     genre: str
     metadata: object    # [(str, ...), (str, ...), ...] (just values)
     nonce: object       # [(str, (str, ...)), ...] (key, values)
+    props: object       # [(str, (str, ...)), ...] (key, values)
     track_ids: object   # [(track_id1), ...]
     trackgroups: object # [(str, [(disc_num, track_num), ...],
                         #     [(str, (str, str, ...)), ...]), ...]

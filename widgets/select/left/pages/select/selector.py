@@ -128,6 +128,8 @@ class Selector(Gtk.Grid):
                 self.on_track_started)
         register_connect_request('player', 'track-finished',
                 self.on_track_finished)
+        register_connect_request('player', 'set-started',
+                self.on_set_started)
 
         self.allocation_height = 0
 
@@ -280,19 +282,22 @@ class Selector(Gtk.Grid):
         row_selected = bool(selection.count_selected_rows())
         if not row_selected:
             self.track_scrolled_window.hide()
-            with stop_emission(self.recording_selection, 'changed'):
-                self.recording_selection.unselect_all()
+            self.recording_selection.unselect_all()
 
     def on_recording_selector_drag_data_get(self, treeview, context,
             data, info, time):
+        model = self.recording_selector.model
         genre = genre_button.genre
-        metadata = self.recording_selector.model.work.metadata
+        metadata = model.work.metadata
         tracks = self.track_selector.view.get_selected_tracks()
         group_map = self.track_selector.model.group_map
-        props = self.recording_selector.model.recording.props
-        uuid = self.recording_selector.model.recording.uuid
-        work_num = self.recording_selector.model.work_num
-        cargo = DragCargo(genre, metadata, tracks, group_map, props,
+        uuid = model.recording.uuid
+        work_num = model.work_num
+        props_rec = model.recording.props
+        props_wrk = model.recording.works[work_num].props
+        props = props_rec + props_wrk
+
+        cargo = DragCargo(genre, metadata, tracks, group_map, props_wrk,
                 uuid, work_num)
         data.set(data.get_selection(), 8, pickle.dumps(cargo))
 
@@ -573,4 +578,15 @@ class Selector(Gtk.Grid):
             return  # The set in the play position (first) is not selected.
 
         self.track_selector.view.unselect_track(track_id)
+
+    def on_set_started(self, player, uuid, work_num):
+        model = self.recording_selector.model
+        if model.recording.uuid == uuid and model.work_num == work_num:
+            model.update_work_props()
+
+            play_props = getattr_from_obj_with_name('play-properties-page')
+            play_props.populate(model.recording.props, model.work.props)
+
+            edit_notebook = getattr_from_obj_with_name('edit-left-notebook')
+            edit_notebook.update_work_props(uuid, work_num, model.work.props)
 

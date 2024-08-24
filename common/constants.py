@@ -22,8 +22,8 @@ IMAGES_DIR = Path('data', 'images')
 
 STATES = ['VOID_PENDING', 'NULL', 'READY', 'PAUSED', 'PLAYING']
 
-AUTO_PROPS_1 = ('times played', 'date created', 'date played')
-AUTO_PROPS_2 = ('codec', 'sample rate', 'resolution', 'source')
+PROPS_REC = ['source', 'codec', 'sample rate', 'resolution', 'date created']
+PROPS_WRK = ['times played', 'date played']
 
 # Border for images in Edit mode image viewer.
 BORDER = 6     # border for cover art

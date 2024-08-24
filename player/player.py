@@ -42,7 +42,7 @@ class Player(GObject.Object):
         pass
 
     @GObject.Signal
-    def set_started(self):
+    def set_started(self, uuid: str, work_num: int):
         pass
 
     @GObject.Signal
@@ -175,6 +175,7 @@ class Player(GObject.Object):
 
         for tracktuple in playqueue_model[0].play_tracks:
             self.uuid = uuid = playqueue_model[0].uuid
+            self.work_num = playqueue_model[0].work_num
             track_id = tracktuple.track_id
             duration = round(tracktuple.duration*1e9)
             self.do('append-queue', uuid, track_id, duration)
@@ -198,7 +199,7 @@ class Player(GObject.Object):
         # If we get state == 'PLAYING' while set_ready is True, then we just
         # started playing a set.
         if self.state == 'PLAYING' and self.set_ready:
-            self.emit('set-started')
+            self.emit('set-started', self.uuid, self.work_num)
             self.set_ready = False
 
     @reply

@@ -131,21 +131,6 @@ class ModelRowWithAttrs:
         return (ModelRowWithAttrs(self.row_tuple, row)
                 for row in self.row.iterchildren())
 
-# Starting play of a recording requires an update to the properties 'times
-# played' and 'date played'. This utility function is used in editnotebook,
-# play metadata, and select recordingselector.
-def update_props(props):
-    props_d = dict(props)
-
-    times_played, = props_d['times played']
-    props_d['times played'] = (str(int(times_played) + 1),)
-
-    now = datetime.now()
-    date_played = now.strftime("%Y %b %d")
-    props_d['date played'] = (date_played,)
-
-    return list(props_d.items())
-
 def make_time_str(seconds):
     minutes, seconds = divmod(round(seconds), 60)
     hours, minutes = divmod(minutes, 60)

@@ -68,7 +68,8 @@ class ControlPanel(GObject.Object):
         self.view.set_pixbuf(button)
 
     def on_recording_selection_changed(self, selection):
-        sensitivity = bool(selection.count_selected_rows())
+        model, treeiter = selection.get_selected()
+        sensitivity = bool(treeiter)
         self.view.play_menuitem_set_sensitive(sensitivity)
 
     def on_playqueue_model_row_inserted(self, model, path, treeiter):

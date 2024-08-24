@@ -326,7 +326,8 @@ class Playqueue(Gtk.Box):
         model = getattr_from_obj_with_name('selector.recording_selector.model')
         track_view = getattr_from_obj_with_name('track-view')
         tracks = track_view.get_selected_tracks()
-        self.select_matching_set(tracks, model.recording.uuid)
+        if model.recording is not None:
+            self.select_matching_set(tracks, model.recording.uuid)
 
     # Called from selector.on_track_selection_changed.
     @idle_add

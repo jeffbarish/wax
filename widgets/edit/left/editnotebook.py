@@ -19,8 +19,7 @@ from common.constants import SHORT, LONG
 from common.constants import SOUND, DOCUMENTS, IMAGES
 from common.constants import COMPLETERS
 from common.types import RecordingTuple, WorkTuple
-from common.utilities import debug
-from common.utilities import update_props
+from common.utilities import debug, idle_add
 from ripper import ripper
 from widgets import config
 from widgets import options_button
@@ -92,8 +91,6 @@ class EditNotebook(Gtk.Notebook):
                 self.on_genre_changed)
         register_connect_request('save-button', 'save-button-clicked',
                 self.on_save_button_clicked)
-        register_connect_request('player', 'set-started',
-                self.on_set_started)
 
         # All changes get funneled to the same handler.
         register_connect_request('edit-work-page',
@@ -332,16 +329,17 @@ class EditNotebook(Gtk.Notebook):
         self.action = (Action.REVISE, Action.NONE)[treeiter is None]
 
     def on_save_button_clicked(self, button, label):
-        self.genre = genre = self.get_genre()
+        self.genre = genre = self.get_work_metadata_editor_genre()
         work_long, work_short = self.get_work_metadata()
         nonce = self.get_nonce()
         tracks, trackids_playable, trackgroups = self.get_tracks()
-        props = self.get_props()
+        props_rec, props_wrk = self.get_props()
 
         new_work = WorkTuple(
             genre=genre,
             metadata=work_long,
             nonce=nonce,
+            props=props_wrk,
             track_ids=trackids_playable,
             trackgroups=trackgroups)
 
@@ -356,7 +354,7 @@ class EditNotebook(Gtk.Notebook):
                     if genre != old_work.genre:
                         self.delete_short_metadata(old_work.genre, edit.uuid)
                     self.recording = self.save_revision(new_work,
-                            self.recording.works, tracks, props,
+                            self.recording.works, tracks, props_rec,
                             list(ripper.disc_ids), self.work_num)
                 case 'Save new':
                     self.work_num += 1
@@ -366,11 +364,11 @@ class EditNotebook(Gtk.Notebook):
             match self.action:
                 case Action.READCD:
                     self.recording = self.create_new_recording(new_work,
-                            tracks, props, list(ripper.disc_ids))
+                            tracks, props_rec, list(ripper.disc_ids))
                     self.work_num = 0
                 case Action.IMPORT:
                     self.recording = self.create_new_recording(new_work,
-                            tracks, props, ['0'])
+                            tracks, props_rec, ['0'])
                     self.work_num = 0
 
             self._revise_mode = True
@@ -414,10 +412,10 @@ class EditNotebook(Gtk.Notebook):
             self._revise_mode = False
             self.recording = None
         else:
-            work_metadata_editor = self.pages['work'].page_widget
-            if self.genre != work_metadata_editor.genre:
-                work_metadata_editor.genre_button.genre = self.genre
-                work_metadata_editor.prepare(self.genre)
+            if self.genre != model.genre:
+                work_metadata_editor = self.pages['work'].page_widget
+                work_metadata_editor.genre_button.genre = model.genre
+                work_metadata_editor.prepare(model.genre)
 
             selection = selector.recording_selection
             self.populate_forms_from_selection(selection)
@@ -480,7 +478,7 @@ class EditNotebook(Gtk.Notebook):
 
             # Populate the properties page.
             properties_editor = self.pages['properties'].page_widget
-            properties_editor.populate(recording.props)
+            properties_editor.populate(recording.props, work.props)
 
             # Populate the files page.
             files_editor = self.pages['files'].page_widget
@@ -499,14 +497,13 @@ class EditNotebook(Gtk.Notebook):
 
         return RecordingTuple(works, tracks, props, disc_ids, edit.uuid)
 
-    def on_set_started(self, player):
-        if self.revise_mode:
-            new_props = update_props(self.recording.props)
-
+    def update_work_props(self, uuid, work_num, props):
+        if self.revise_mode \
+                and self.recording.uuid == uuid \
+                and self.work_num == work_num:
+            work = self.recording.works[work_num]
             properties_editor = self.pages['properties'].page_widget
-            properties_editor.populate(new_props)
-
-            self.recording = self.recording._replace(props=new_props)
+            properties_editor.populate(self.recording.props, props)
 
     # Customize set_sensitive so that genre_button is always sensitive.
     # work.editor also has a custom set_sensitive. Otherwise, this
@@ -637,7 +634,7 @@ class EditNotebook(Gtk.Notebook):
         for key, vals in metadata:
             yield (key, list(zip(vals)))
 
-    def get_genre(self):
+    def get_work_metadata_editor_genre(self):
         work_metadata_editor = self.pages['work'].page_widget
         return work_metadata_editor.genre
 
@@ -674,7 +671,7 @@ class EditNotebook(Gtk.Notebook):
 
     def get_props(self):
         props_metadata_editor = self.pages['properties'].page_widget
-        return props_metadata_editor.get_metadata()
+        return props_metadata_editor.get_props()
 
     def clear_all_forms(self):
         for module in self.pages.values():

@@ -72,8 +72,10 @@ class PlayNotebook(Gtk.Notebook):
             model = model_filter.props.child_model
             metadata = model.metadata
             nonce = model.work.nonce
-            props = model.recording.props
+            props_rec = model.recording.props
             uuid = model.recording.uuid
+            props_wrk = model.work.props
+
             self.pages['metadata'].page_widget.populate(metadata, nonce, uuid)
             self.pages['wikipedia'].page_widget.populate(metadata)
             if self.pages['docs'].page_widget.has_docs(uuid):
@@ -81,7 +83,7 @@ class PlayNotebook(Gtk.Notebook):
                 self.pages['docs'].page_widget.populate(uuid)
             else:
                 self.pages['docs'].page_widget.hide()
-            self.pages['properties'].page_widget.populate(props)
+            self.pages['properties'].page_widget.populate(props_rec, props_wrk)
 
     def on_recording_saved(self, editnotebook, genre):
         uuid = editnotebook.recording.uuid
@@ -91,6 +93,6 @@ class PlayNotebook(Gtk.Notebook):
         metadata = list(zip(keys, work_long))
         self.pages['metadata'].page_widget.populate(metadata, nonce, uuid)
 
-        props = editnotebook.get_props()
-        self.pages['properties'].page_widget.populate(props)
+        props_rec, props_wrk = editnotebook.get_props()
+        self.pages['properties'].page_widget.populate(props_rec, props_wrk)
 

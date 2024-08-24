@@ -224,25 +224,23 @@ class SearchIncremental(Gtk.Box):
 
     def on_drag_begin(self, flowboxchild, context):
         # It is possible to drag a recording without first selecting it, so
-        # set the selection here even though doing so might be redundant.
-        with signal_blocker(self.incremental_flowbox,
-                'selected-children-changed'):
+        # set the selection here, if necessary.
+        if not flowboxchild.is_selected():
             self.incremental_flowbox.select_child(flowboxchild)
 
-            # It is possible to initiate a drag without first selecting the
-            # child, so simulate a change in selection by emitting the same
-            # signal that on_flowbox_selected_children_changed emits when a
-            # flowbox child is selected.
-            recording, uuid, work_num = self.get_recording(flowboxchild)
-            self.emit('selection-changed', recording.works[work_num].genre,
-                    uuid, work_num, self.matching_tracks)
+            # Process all events associated with child selection to be sure
+            # that the recordingselector model gets updated before playqueue
+            # receives the drag.
+            while Gtk.events_pending():
+                Gtk.main_iteration()
 
         event = Gtk.get_current_event()
         success, x, y = event.get_coords()
 
-        image = self.get_image(flowboxchild)
-        pb = image.get_pixbuf()
-        Gtk.drag_set_icon_pixbuf(context, pb, int(x), int(y))
+        if success:
+            image = self.get_image(flowboxchild)
+            pb = image.get_pixbuf()
+            Gtk.drag_set_icon_pixbuf(context, pb, int(x), int(y))
 
     def on_drag_data_get(self, flowboxchild, context, data, info, time):
         recording, uuid, work_num = self.get_recording(flowboxchild)

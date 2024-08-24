@@ -46,6 +46,7 @@ class UnicodeKbd(Gtk.Window):
             button.set_size_request(24, 24)
             button.set_relief(Gtk.ReliefStyle.NONE)
             button.set_can_focus(False)
+            button.set_focus_on_click(False)
             button.set_name('unicode-kbd-button')
             button.show()
             button.connect('clicked', self.on_button_clicked)

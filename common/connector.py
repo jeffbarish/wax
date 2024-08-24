@@ -133,6 +133,7 @@ def add_emission_stopper(signal_name=None):
             try:
                 if obj._stop_emission == signal_name:
                     GObject.signal_stop_emission_by_name(obj, signal_name)
+                    # from gi.repository import Gtk
                     # if isinstance(obj, Gtk.TreeSelection):
                     #     treeview = obj.get_tree_view()
                     #     print(f'Stopped emission of signal \'{signal_name}\''

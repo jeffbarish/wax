@@ -6,6 +6,7 @@ import shelve
 import unicodedata
 import xml.sax.saxutils
 from bisect import insort_left
+from datetime import datetime
 from itertools import groupby
 from pathlib import Path
 from typing import NamedTuple
@@ -20,7 +21,7 @@ from common.connector import register_connect_request
 from common.constants import SHORT, LONG
 from common.genrespec import genre_spec
 from common.utilities import debug
-from common.utilities import update_props, playable_tracks
+from common.utilities import playable_tracks
 from contextlib import contextmanager
 from widgets import control_panel
 from widgets import config
@@ -204,15 +205,6 @@ class RecordingModel(Gtk.ListStore):
         # 0 of the model.
         self.clicked_column_id = 0
 
-        register_connect_request('player', 'set-started', self.on_set_started)
-
-    def on_set_started(self, player):
-        new_props = update_props(self.recording.props)
-        self.recording = self.recording._replace(props=new_props)
-
-        with shelve.open(LONG, 'w') as recording_shelf:
-            recording_shelf[self.recording.uuid] = self.recording
-
     def convert_iter_to_child_iter(self, treeiter):
         if treeiter is None:
             return None
@@ -336,6 +328,23 @@ class RecordingModel(Gtk.ListStore):
                 self.work.track_ids)
         keys = genre_spec.all_keys(self.genre)
         self.metadata = list(zip(keys, recording.works[work_num].metadata))
+
+    def update_work_props(self):
+        props_d = dict(self.work.props)
+
+        times_played, = props_d['times played']
+        props_d['times played'] = (str(int(times_played) + 1),)
+
+        now = datetime.now()
+        date_played = now.strftime("%Y %b %d")
+        props_d['date played'] = (date_played,)
+
+        new_props = list(props_d.items())
+        new_work = self.work._replace(props=new_props)
+        self.recording.works[self.work_num] = self.work = new_work
+
+        with shelve.open(LONG, 'w') as recording_shelf:
+            recording_shelf[self.recording.uuid] = self.recording
 
 class RecordingView(Gtk.TreeView):
     @GObject.Signal

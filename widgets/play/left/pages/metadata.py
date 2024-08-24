@@ -9,11 +9,9 @@ from gi.repository import Gtk, GLib, Pango
 from common.connector import register_connect_request
 from common.utilities import idle_add
 from common.utilities import debug
-from common.utilities import update_props
 from widgets.select.right import playqueue_model_with_attrs as playqueue_model
 from widgets.select.right import select_right as playqueue_select
 from widgets import control_panel
-from .properties import page_widget as play_properties
 
 WIKIPEDIA_URL = 'https://en.wikipedia.org/wiki/special:search/'
 
@@ -80,8 +78,6 @@ class MetadataView(Gtk.Grid):
                 self.on_track_finished)
         register_connect_request('player', 'set-ready',
                 self.on_set_ready)
-        register_connect_request('player', 'set-started',
-                self.on_set_started)
 
         self.initialize_track_time_func()
         self.initialize_set_time_func()
@@ -292,10 +288,6 @@ class MetadataView(Gtk.Grid):
         # set_duration is 0 for the alert sound.
         self.track_metadata_treeview.props.visible = bool(set_duration)
         self.track_controls_box.props.visible = bool(set_duration)
-
-    def on_set_started(self, player):
-        new_props = update_props(playqueue_model[0].props)
-        play_properties.populate(new_props)
 
     def initialize_set_time_func(self):
         def remaining(pos):
