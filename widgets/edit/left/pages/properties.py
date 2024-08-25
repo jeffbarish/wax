@@ -93,16 +93,16 @@ class PropertiesEditor(Gtk.ScrolledWindow):
         # The create button initiates a rip from a CD. We know the properties
         # of a rip, so specify them here.
         now = datetime.now()
-        props = [('date created', (now.strftime("%Y %b %d"),)),
-            ('times played', ('0',)),
+        props_rec = [('date created', (now.strftime("%Y %b %d"),)),
             ('codec', ('FLAC',)),
             ('sample rate', ('44.1 kHz',)),
             ('resolution', ('16',)),
             ('source', ('CD',))]
+        props_wrk = [('times played', ('0',))]
 
         # Call populate from the idle loop to assure that the clear initiated
         # by editnotebook.clear_all_forms runs first.
-        GLib.idle_add(self.populate, props)
+        GLib.idle_add(self.populate, props_rec, props_wrk)
 
     def populate(self, props_rec: List, props_wrk: List):
         signal_id = GObject.signal_lookup('changed', Gtk.Entry)

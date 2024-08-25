@@ -107,7 +107,8 @@ class Ripper(GObject.Object):
         # to rerip the last disc so we need to test separately for that case.
         last_disc = (self.disc_id == self.disc_ids[-1])
         if not self.rerip and last_disc:
-            shutil.rmtree(Path(SOUND, self.uuid, str(self.disc_num)))
+            shutil.rmtree(Path(SOUND, self.uuid, str(self.disc_num)),
+                    ignore_errors=True)
             self.disc_ids.remove(self.disc_id)
             if self.disc_id in self.saved_disc_ids:
                 self.saved_disc_ids.remove(self.disc_id)

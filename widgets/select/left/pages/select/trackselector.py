@@ -421,7 +421,7 @@ class TrackView(Gtk.TreeView):
                         with stop_emission(self.selection, 'changed'):
                             self.expand_row(parent.path, False)
                             self.selection.select_path(parent.path)
-        self.selection.emit('changed')
+        GLib.idle_add(self.selection.emit, 'changed')
 
         # Scroll the first selected track into view.
         self.scroll_first_selected_track(track_tuples)

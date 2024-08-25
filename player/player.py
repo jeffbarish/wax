@@ -7,7 +7,7 @@ functionality.'''
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GObject', '2.0')
-from gi.repository import Gtk, GObject
+from gi.repository import Gtk, GObject, GLib
 
 from common.connector import register_connect_request
 from common.connector import getattr_from_obj_with_name
@@ -199,7 +199,7 @@ class Player(GObject.Object):
         # If we get state == 'PLAYING' while set_ready is True, then we just
         # started playing a set.
         if self.state == 'PLAYING' and self.set_ready:
-            self.emit('set-started', self.uuid, self.work_num)
+            GLib.idle_add(self.emit, 'set-started', self.uuid, self.work_num)
             self.set_ready = False
 
     @reply
