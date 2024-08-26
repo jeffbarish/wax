@@ -92,7 +92,7 @@ class ImportFiles(Gtk.Paned):
         file_dir, filenames = file_chooser.get_selected_files()
         all_data = raw_metadata.import_selected_files(uuid, file_dir,
                 filenames)
-        metadata, tracks, props, images, docs = all_data
+        metadata, tracks, props_rec, props_wrk, images, docs = all_data
 
         if metadata:
             work_editor = getattr_from_obj_with_name('edit-work-page')
@@ -104,9 +104,9 @@ class ImportFiles(Gtk.Paned):
             work_tracks = [t.track_id for t in tracks]
             track_editor.populate(tracks, work_tracks, [])
 
-        if props:
+        if props_rec or props_wrk:
             props_editor = getattr_from_obj_with_name('edit-properties-page')
-            props_editor.populate(props)
+            props_editor.populate(props_rec, props_wrk)
 
         if images:
             image_editor = getattr_from_obj_with_name('edit-images-page')
@@ -124,7 +124,7 @@ class ImportFiles(Gtk.Paned):
         file_dir, filenames = file_chooser.get_selected_files()
         all_data = raw_metadata.import_selected_files(uuid, file_dir,
                 filenames)
-        _, tracks, _, images, docs = all_data
+        _, tracks, _, _, images, docs = all_data
 
         if tracks:
             track_editor = getattr_from_obj_with_name('edit-tracks-page')

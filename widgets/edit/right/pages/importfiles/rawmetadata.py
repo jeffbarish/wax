@@ -209,15 +209,15 @@ class RawMetadata(Gtk.ScrolledWindow):
         # If I imported only an image or a doc then there are no tags.
         if not tags:
             images = list(images_set) if images_set else []
-            return {}, [], [], images, docs
+            return {}, [], [], [], images, docs
 
         # Extract metadata, tracks, and images from accumulated data.
-        metadata, tracks, props, images = self.process_data(
+        metadata, tracks, props_rec, props_wrk, images = self.process_data(
                 tracks, tags, worklines, tracknumbers, images_set)
 
         self.emit('import-finished')
 
-        return metadata, tracks, props, images, docs
+        return metadata, tracks, props_rec, props_wrk, images, docs
 
     def process_tags(self, track_num, i_track,
             tracks, tags, worklines, tracknumbers, images_set):
@@ -308,12 +308,13 @@ class RawMetadata(Gtk.ScrolledWindow):
         props_d['codec'] = tuple(tags['codec'])
         props_d['sample rate'] = tuple(tags['sample_rate'])
         props_d['resolution'] = tuple(tags['bits_per_sample'])
-        props_d['times played'] = (0,)
         props_d['source'] = ('File',)
         props_d['date created'] = (datetime.now().strftime('%Y %b %d'),)
-        props = list(props_d.items())
+        props_rec = list(props_d.items())
 
-        return metadata, tracks, props, images
+        props_wrk = [('times played', ('0',))]
+
+        return metadata, tracks, props_rec, props_wrk, images
 
     def extract_tags(self, file_dir, file_name):
         source_path = os.path.join(TRANSFER, file_dir.lstrip('/'), file_name)
