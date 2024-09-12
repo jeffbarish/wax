@@ -357,7 +357,7 @@ class EditNotebook(Gtk.Notebook):
                             self.recording.works, tracks, props_rec,
                             list(ripper.disc_ids), self.work_num)
                 case 'Save new':
-                    self.work_num += 1
+                    self.work_num = max(self.recording.works) + 1
                     self.recording = self.recording._replace(tracks=tracks)
                     self.recording.works[self.work_num] = new_work
         else:
