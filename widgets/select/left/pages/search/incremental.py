@@ -3,7 +3,6 @@
 import os
 import shelve
 import string
-import unicodedata
 import bisect
 from itertools import groupby
 from itertools import product
@@ -14,14 +13,14 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf, GObject
 
-from common.connector import getattr_from_obj_with_name, signal_blocker
+from common.connector import getattr_from_obj_with_name
 from common.connector import register_connect_request
-from common.connector import add_emission_stopper
-from common.constants import LONG
-from common.constants import IMAGES, IMAGES_DIR
+from common.constants import LONG, IMAGES, IMAGES_DIR
+from common.contextmanagers import signal_blocker
+from common.decorators import emission_stopper
+from common.decorators import idle_add
 from common.types import GroupTuple
 from common.utilities import debug
-from common.utilities import idle_add
 from unidecode import unidecode
 from widgets import control_panel
 
@@ -190,7 +189,7 @@ class SearchIncremental(Gtk.Box):
     def on_recording_selection_changed(self, recording_selection):
         self.select_matching_flowboxchild()
 
-    @add_emission_stopper()
+    @emission_stopper()
     def on_playqueue_select_selection_changed(self, selection):
         model, treeiter = selection.get_selected()
         if treeiter is None:
@@ -306,7 +305,7 @@ class SearchIncremental(Gtk.Box):
     def restart(self, text):
         # Simulate typing in the new text.
         for i in range(len(text)):
-            new_text = text[:i+1]
+            new_text = text[:i + 1]
             first_match_text, first_match = self.start(new_text)
             if first_match:
                 return first_match_text, first_match

@@ -6,7 +6,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
-from common.constants import PROPS_REC, PROPS_WRK
+from common.constants import PROPS_WRK
 from common.utilities import debug
 
 @Gtk.Template.from_file('data/glade/play/properties.glade')

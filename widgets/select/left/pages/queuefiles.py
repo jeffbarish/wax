@@ -7,12 +7,12 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
 from gi.repository.GdkPixbuf import PixbufLoader
 
+from common.config import config
 from common.constants import SOUND, IMAGES, IMAGES_DIR, QUEUEFILES, LONG
 from common.types import GroupTuple
 from common.utilities import debug
 from common.utilities import make_time_str
 from widgets.select.right import playqueue_model_with_attrs, PlayqueueModelRow
-from widgets import config
 from widgets.select.right import select_right
 
 @Gtk.Template.from_file('data/glade/select/queuefiles.glade')

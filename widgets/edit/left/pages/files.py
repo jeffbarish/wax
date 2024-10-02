@@ -11,6 +11,7 @@ from gi.repository import Gtk, Gdk, Pango
 from common.constants import SOUND, DOCUMENTS, IMAGES, SND_EXT, NOEXPAND
 from common.connector import register_connect_request
 from common.connector import getattr_from_obj_with_name
+from common.decorators import UniqObjectName
 from common.utilities import debug
 from ripper import ripper
 
@@ -243,6 +244,7 @@ class FilesEditor(Gtk.Box):
         self.track_ids = []
 
 # Put FilesListTreeView in a box with a label for a title.
+@UniqObjectName
 class ListBox(Gtk.Box):
     def __init__(self):
         super().__init__()
@@ -283,6 +285,7 @@ class TracksListBox(ListBox):
     def set_label_text(self, text):
         self.title_label.set_text(f'Disc {int(text) + 1}')
 
+@UniqObjectName
 @Gtk.Template.from_file('data/glade/edit/left/files_treeview.glade')
 class FilesListTreeView(Gtk.TreeView):
     __gtype_name__ = 'edit_files_treeview'
@@ -296,8 +299,6 @@ class FilesListTreeView(Gtk.TreeView):
     total_size_label = None
 
     def __init__(self):
-        super().__init__()
-
         # fname, file_size, mtime, dim
         _types = [str, str, str, bool]
         self.files_list_liststore = Gtk.ListStore.new(_types)

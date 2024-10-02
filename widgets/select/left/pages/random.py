@@ -7,9 +7,9 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib
 
+from common.config import config
 from common.constants import SHORT, LONG
 from common.utilities import debug, playable_tracks
-from widgets import config
 from widgets.select.right import select_right as playqueue_select
 
 

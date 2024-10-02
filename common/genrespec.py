@@ -1,8 +1,8 @@
 """Wrap the config pickle file to provide options for accessing the genre
 data."""
 
-from common.utilities import debug
-from widgets import config
+from .config import config
+from .utilities import debug
 
 class GenreSpec():
     def __iter__(self):

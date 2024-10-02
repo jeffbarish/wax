@@ -6,6 +6,7 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('Poppler', '0.18')
 from gi.repository import Gtk, Poppler
 
+from common.decorators import UniqObjectName
 from common.utilities import debug
 
 # Gtk.ListStore cannot store binary data (the data in the PDF file), so
@@ -48,10 +49,9 @@ class MyDocsListstore:
     def name_iter(self):
         return (r[0] for r in self.pdfviewer_liststore)
 
+@UniqObjectName
 class PdfViewer(Gtk.EventBox):
     def __init__(self):
-        super().__init__()
-
         drawing_area = Gtk.DrawingArea.new()
         self.add(drawing_area)
 

@@ -12,14 +12,14 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject, GLib
 from fuzzywuzzy import fuzz
 
+from common.config import config
 from common.connector import register_connect_request
 from common.connector import getattr_from_obj_with_name
-from common.connector import QuietProperty
 from common.constants import METADATA_CLASSES, COMPLETERS
+from common.descriptors import QuietProperty
 from common.genrespec import genre_spec
 from common.utilities import debug
 from ripper import ripper
-from widgets import config
 from widgets import options_button
 from widgets.genrebutton import GenreButton
 from .abbreviators import abbreviator

@@ -318,7 +318,7 @@ class PlayEngine:
                 # enough to set the position and then pause.
                 self.playbin.set_property('uri', self.track.uri)
                 self.set_state('PLAYING')
-                self.get_state() # this statement is necessary
+                self.get_state()  # this statement is necessary
                 self._do_seek(ratio)
                 self.set_state('PAUSED')
             case Gst.State.PAUSED:

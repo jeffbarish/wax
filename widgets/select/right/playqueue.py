@@ -8,17 +8,17 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 from gi.repository.GdkPixbuf import Pixbuf
 
-from common.connector import stop_emission
-from common.connector import add_emission_stopper
+from common.config import config
 from common.connector import register_connect_request
 from common.connector import getattr_from_obj_with_name
-from common.connector import signal_blocker
 from common.constants import IMAGES, IMAGES_DIR
+from common.contextmanagers import signal_blocker
+from common.contextmanagers import stop_emission
+from common.decorators import emission_stopper
+from common.decorators import idle_add
 from common.types import DragCargo, GroupTuple
 from common.utilities import debug
 from common.utilities import make_time_str
-from common.utilities import idle_add
-from widgets import config
 from widgets import options_button
 
 from . import PlayqueueModelRow
@@ -68,7 +68,7 @@ class Playqueue(Gtk.Box):
         # Restart appears only for the first set in the queue.
         menuitem = Gtk.MenuItem.new_with_label('Restart')
         menuitem.hide()
-        menuitem.connect('activate', self.on_options_play_restart)
+        menuitem.connect('activate', self.on_play_context_restart)
         context_menu.append(menuitem)
         self.restart_menuitem = menuitem
 
@@ -121,8 +121,6 @@ class Playqueue(Gtk.Box):
                 self.on_options_select_remove_item)
         options_button.connect_menuitem('Select', 'Clear queue',
                 self.on_options_select_clear_queue)
-        options_button.connect_menuitem('Play', 'Restart',
-                self.on_options_play_restart)
 
     def on_search_incremental_selection_changed(self, searchincremental,
             genre, uuid, work_num, tracks):
@@ -152,9 +150,9 @@ class Playqueue(Gtk.Box):
                 playqueue_model.remove(row.iter)
         self.playqueue_durations_box.hide()
 
-    def on_options_play_restart(self, menuitem):
-        first_set = playqueue_model_with_attrs[0]
-        first_set.play_tracks = list(first_set.tracks)
+    def on_play_context_restart(self, menuitem):
+        menuitem = options_button.get_menuitem('Play', 'Restart')
+        menuitem.activate()
 
     def on_genre_menu_selection_done(self, menushell):
         # After changing genre, no recording is selected so we also clear
@@ -162,11 +160,16 @@ class Playqueue(Gtk.Box):
         self.playqueue_treeselection.unselect_all()
 
     def on_playqueue_model_row_inserted(self, model, path, treeiter):
+        self._display_item_duration(treeiter)
+        self._display_total_duration()
         self.playqueue_durations_box.show_all()
-        self._display_total_duration(model)
 
     def on_playqueue_model_row_deleted(self, model, path):
-        self._display_total_duration(model)
+        if len(model):
+            self._display_total_duration()
+            self.playqueue_durations_box.show_all()
+        else:
+            self.playqueue_durations_box.hide()
 
     def on_random_activated(self, menuitem):
         state = menuitem.get_active()
@@ -175,18 +178,17 @@ class Playqueue(Gtk.Box):
             row = playqueue_model_with_attrs[treeiter]
             row.random = state
 
-    @add_emission_stopper()
+    @emission_stopper()
     def on_playqueue_select_selection_changed(self, selection):
         model, treeiter = selection.get_selected()
         if treeiter is not None:
+            self._display_item_duration(treeiter)
             self.playqueue_durations_box.show_all()
             with signal_blocker(self.random_menuitem, 'activate'):
                 row = PlayqueueModelRow._make(model[treeiter])
                 self.random_menuitem.set_active(row.random)
-        elif len(model):
-            self.playqueue_item_duration_box.hide()
         else:
-            self.playqueue_durations_box.hide()
+            self.playqueue_item_duration_box.hide()
 
     @Gtk.Template.Callback()
     def on_playqueue_treeview_button_press_event(self, treeview, event):
@@ -342,12 +344,21 @@ class Playqueue(Gtk.Box):
             with stop_emission(self.playqueue_treeselection, 'changed'):
                 self.playqueue_treeselection.unselect_all()
 
-    def on_track_finished(self, player, n_tracks, track_id, uuid):
+    def on_track_finished(self, player, n_tracks, track_id, uuid, work_num):
         # Remove the track from play_tracks with id track_id (which might not
         # be the first one if random is set).
         first_set = playqueue_model_with_attrs[0]
         first_set.play_tracks = [t for t in first_set.play_tracks
                 if t.track_id != track_id]
+
+        # Update item duration if the first set is selected.
+        model, treeiter = self.playqueue_treeselection.get_selected()
+        if treeiter is not None:
+            path = model.get_path(treeiter)
+            if path == Gtk.TreePath.new_first():
+                self._display_item_duration(treeiter)
+
+        self._display_total_duration()
 
     def on_recording_saved(self, editnotebook, genre):
         recording = editnotebook.recording
@@ -411,15 +422,14 @@ class Playqueue(Gtk.Box):
                 work_num, False, recording.props, True, play_tracks)
         playqueue_model.append(source_row)
 
-    def _display_total_duration(self, model):
-        total_duration = 0.0
-        for row in model:
-            playqueue_model_row = PlayqueueModelRow._make(row)
-            item_duration = sum(track.duration
-                    for track in playqueue_model_row.tracks)
-            item_duration_str = make_time_str(item_duration)
-            self.playqueue_item_duration_value.set_text(item_duration_str)
-            total_duration += item_duration
+    def _display_item_duration(self, treeiter):
+        row = playqueue_model_with_attrs[treeiter]
+        item_duration_str = make_time_str(row.duration)
+        self.playqueue_item_duration_value.set_text(item_duration_str)
+
+    def _display_total_duration(self):
+        total_duration = sum(row.duration
+                for row in playqueue_model_with_attrs)
         total_duration_str = make_time_str(total_duration)
         self.playqueue_total_duration_value.set_text(total_duration_str)
 

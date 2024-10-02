@@ -89,7 +89,6 @@
             </child>
             <child>
               <object class="GtkButton" id="image_delete_button">
-                <property name="name">image-button</property>
                 <property name="visible">True</property>
                 <property name="sensitive">False</property>
                 <property name="can-focus">False</property>
@@ -103,6 +102,9 @@
                     <property name="icon-name">edit-clear</property>
                   </object>
                 </child>
+                <style>
+                  <class name="image-button"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -116,7 +118,6 @@
             </child>
             <child>
               <object class="GtkButton" id="image_download_button">
-                <property name="name">image-button</property>
                 <property name="visible">True</property>
                 <property name="sensitive">False</property>
                 <property name="can-focus">False</property>
@@ -130,6 +131,9 @@
                     <property name="pixbuf">data/images/download.png</property>
                   </object>
                 </child>
+                <style>
+                  <class name="image-button"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -140,7 +144,6 @@
             </child>
             <child>
               <object class="GtkButton" id="image_paste_button">
-                <property name="name">image-button</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="receives-default">True</property>
@@ -153,6 +156,9 @@
                     <property name="icon-name">edit-paste</property>
                   </object>
                 </child>
+                <style>
+                  <class name="image-button"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">False</property>

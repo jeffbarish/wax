@@ -6,7 +6,7 @@ from gi.repository import Gtk
 
 from .coverartviewer import CoverArtViewer
 from .playqueue import Playqueue
-from widgets import config
+from common.config import config
 
 RIGHT_PANEL_VBOX_WIDTH = config.geometry['right_panel_width']
 

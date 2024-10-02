@@ -12,16 +12,16 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib, GObject
 
+from common.config import config
 from common.connector import register_connect_request
 from common.connector import getattr_from_obj_with_name
-from common.connector import QuietProperty
 from common.constants import SHORT, LONG
 from common.constants import SOUND, DOCUMENTS, IMAGES
 from common.constants import COMPLETERS
+from common.descriptors import QuietProperty
 from common.types import RecordingTuple, WorkTuple
-from common.utilities import debug, idle_add
+from common.utilities import debug
 from ripper import ripper
-from widgets import config
 from widgets import options_button
 from widgets import edit
 from widgets.select.left.pages.select.recordingselector \
@@ -381,6 +381,9 @@ class EditNotebook(Gtk.Notebook):
         images_editor = self.pages['images'].page_widget
         images_editor.write_images(edit.uuid)
 
+        if self.action == Action.READCD:
+            images_editor.tag_cover_art(edit.uuid)
+
         # Get edit-docs-page to write the current docs to files.
         docs_editor = self.pages['docs'].page_widget
         docs_editor.write_docs(edit.uuid)
@@ -501,7 +504,6 @@ class EditNotebook(Gtk.Notebook):
         if self.revise_mode \
                 and self.recording.uuid == uuid \
                 and self.work_num == work_num:
-            work = self.recording.works[work_num]
             properties_editor = self.pages['properties'].page_widget
             properties_editor.populate(self.recording.props, props)
 

@@ -7,11 +7,12 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject, GdkPixbuf
 
+from common.config import config
 from common.connector import register_connect_request
 from common.constants import IMAGES_DIR
 from common.utilities import debug
 import widgets
-from widgets import options_button, config
+from widgets import options_button
 from widgets.select.right import playqueue_model
 
 class State(Enum):

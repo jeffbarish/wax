@@ -13,11 +13,11 @@ from mutagen import MutagenError
 
 from . import doublebutton
 from common.connector import getattr_from_obj_with_name
-from common.connector import stop_emission, add_emission_stopper
-from common.connector import signal_blocker
-from common.connector import QuietProperty
 from common.constants import TRANSFER
 from common.constants import SND_EXT, JPG_EXT, PDF_EXT
+from common.contextmanagers import signal_blocker
+from common.contextmanagers import stop_emission
+from common.decorators import emission_stopper
 from common.utilities import debug
 from common.utilities import make_time_str
 from ripper import ripper
@@ -257,7 +257,7 @@ class FileChooser(Gtk.Box):
         doublebutton.config(None, False, False)
 
     @Gtk.Template.Callback()
-    @add_emission_stopper()
+    @emission_stopper()
     def on_file_chooser_treeselection_changed(self, selection):
         model, treepaths = selection.get_selected_rows()
         if not treepaths:
@@ -295,9 +295,6 @@ class FileChooser(Gtk.Box):
                 if filename.suffix in suffix_map[suffix]:
                     names.append(str(Path(*self.current_dir, filename)))
             setattr(self, f'_{suffix}_filenames', names)
-
-        revise_mode = getattr_from_obj_with_name(
-                'edit-left-notebook.revise_mode')
 
         # The label can be either Import or Add if a sound file is
         # selected. Otherwise, it must be Add.

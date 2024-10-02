@@ -4,11 +4,12 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GObject
 
-from common.connector import stop_emission_with_name, add_emission_stopper
-from common.connector import signal_blocker
 from common.constants import NOEXPAND
+from common.config import config
+from common.contextmanagers import signal_blocker
+from common.contextmanagers import stop_emission_with_name
+from common.decorators import emission_stopper
 from common.utilities import debug
-from widgets import config
 
 class TrackSecondaryMetadataEditor(Gtk.Box):
     @GObject.Signal(flags=GObject.SignalFlags.RUN_FIRST)
@@ -32,7 +33,7 @@ class TrackSecondaryMetadataEditor(Gtk.Box):
             if len(visible_fields) > 1:
                 self.on_arrow_button_clicked(visible_fields[-2])
 
-    @add_emission_stopper('track-secondary-metadata-changed')
+    @emission_stopper('track-secondary-metadata-changed')
     def do_track_secondary_metadata_changed(self, metadata):
         pass
 
@@ -156,12 +157,13 @@ class TrackMetadataField(Gtk.Box):
         self.set_orientation(Gtk.Orientation.HORIZONTAL)
 
         self.arrow_button = arrow_button = Gtk.Button()
-        arrow_button.set_name('arrow-button-track')
         arrow_button.set_relief(Gtk.ReliefStyle.NONE)
         arrow_button.set_can_focus(False)
         arrow_button.set_sensitive(False)
         arrow_button.connect('clicked', self.on_button_clicked)
         arrow_button.show()
+        style_context = arrow_button.get_style_context()
+        style_context.add_class('arrow-button-track')
 
         self.arrow_image_down = Gtk.Image.new_from_icon_name(
                 'pan-down-symbolic', Gtk.IconSize.BUTTON)

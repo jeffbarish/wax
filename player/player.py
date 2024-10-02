@@ -61,7 +61,8 @@ class Player(GObject.Object):
         pass
 
     @GObject.Signal
-    def track_finished(self, n_tracks: int, track_id: object, uuid: str):
+    def track_finished(self, n_tracks: int, track_id: object,
+            uuid: str, work_num: int):
         pass
 
     def __init__(self):
@@ -177,7 +178,7 @@ class Player(GObject.Object):
             self.uuid = uuid = playqueue_model[0].uuid
             self.work_num = playqueue_model[0].work_num
             track_id = tracktuple.track_id
-            duration = round(tracktuple.duration*1e9)
+            duration = round(tracktuple.duration * 1e9)
             self.do('append-queue', uuid, track_id, duration)
 
         self.do('ready-play')
@@ -215,7 +216,8 @@ class Player(GObject.Object):
 
     @reply
     def on_track_finished(self, n_tracks, *trackid):
-        self.emit('track-finished', n_tracks, trackid, self.uuid)
+        self.emit('track-finished', n_tracks, trackid,
+                self.uuid, self.work_num)
 
         for menuitem in options_button.option_menus['Play']:
             if menuitem.get_label() == 'Stop on track done':

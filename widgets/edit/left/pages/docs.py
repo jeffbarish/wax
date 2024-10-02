@@ -8,13 +8,11 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('Poppler', '0.18')
 from gi.repository import Gtk
 
-from common.connector import getattr_from_obj_with_name
-from common.connector import register_connect_request
-from common.connector import QuietProperty
 from common.constants import DOCUMENTS, TRANSFER
 from common.constants import PDF_EXT
+from common.contextmanagers import cd_context
+from common.descriptors import QuietProperty
 from common.utilities import debug
-from common.utilities import cd_context
 from widgets.pdfviewer import MyDocsListstore, PdfViewer
 from widgets import options_button
 

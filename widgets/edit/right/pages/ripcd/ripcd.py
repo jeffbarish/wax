@@ -12,10 +12,10 @@ from common.cddrivewatcher import cd_drive_watcher
 from common.connector import getattr_from_obj_with_name
 from common.connector import register_connect_request
 from common.constants import NOEXPAND
+from common.decorators import idle_add
 from common.types import TrackTuple
 from common.utilities import debug
 from common.utilities import css_load_from_data
-from common.utilities import idle_add
 from ripper import ripper
 from widgets import options_button
 from widgets import edit
@@ -216,6 +216,9 @@ class RipCD(Gtk.Box):
                 if key in tags:
                     del tags[key]
             ripper.tag_files(tags, self.mbquery.tracks)
+
+            image_editor = getattr_from_obj_with_name('edit-images-page')
+            image_editor.tag_cover_art(ripper.uuid)
 
         self._initialize_controls()
 

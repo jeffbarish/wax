@@ -9,13 +9,13 @@ from gi.repository import Gtk, GObject, GLib
 from . import doublebutton
 from .filechooser import FileChooser
 from .rawmetadata import RawMetadata
+from common.config import config
 from common.connector import getattr_from_obj_with_name
 from common.connector import register_connect_request
 from common.constants import NOEXPAND, SND_EXT
 from common.utilities import debug
 from ripper import ripper
 from widgets import options_button
-from widgets import config
 from widgets import edit
 
 file_chooser = FileChooser()

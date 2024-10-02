@@ -14,16 +14,16 @@ from .recordingselector import RecordingSelector
 from .trackselector import TrackSelector
 from .alphabetscroller import AlphabetScroller
 from .filterbutton import FilterButtonBox
-from common.connector import add_emission_stopper
-from common.connector import stop_emission
+from common.config import config
 from common.connector import register_connect_request
 from common.connector import getattr_from_obj_with_name
+from common.contextmanagers import stop_emission
+from common.decorators import emission_stopper
+from common.decorators import idle_add
 from common.types import DragCargo
 from common.utilities import debug
-from common.utilities import idle_add
-from widgets import config
-from widgets.select.right import PlayqueueModelRow
 from widgets.select.right import select_right as playqueue_select
+from widgets.select.right import playqueue_model_with_attrs
 
 PANED_POSITION = config.geometry['selector_paned_position']
 
@@ -230,7 +230,7 @@ class Selector(Gtk.Grid):
         selection = playqueue_select.playqueue_treeselection
         selection.unselect_all()
 
-    @add_emission_stopper()
+    @emission_stopper()
     def on_recording_selection_changed(self, selection):
         model_filter, treeiter = selection.get_selected()
         if treeiter is None:
@@ -277,7 +277,7 @@ class Selector(Gtk.Grid):
         self.recording_selector.view.scroll_to_cell(treepath,
                 None, True, 0.5, 0.0)
 
-    @add_emission_stopper()
+    @emission_stopper()
     def on_track_selection_changed(self, selection):
         row_selected = bool(selection.count_selected_rows())
         if not row_selected:
@@ -293,24 +293,21 @@ class Selector(Gtk.Grid):
         group_map = self.track_selector.model.group_map
         uuid = model.recording.uuid
         work_num = model.work_num
-        props_rec = model.recording.props
         props_wrk = model.recording.works[work_num].props
-        props = props_rec + props_wrk
 
         cargo = DragCargo(genre, metadata, tracks, group_map, props_wrk,
                 uuid, work_num)
         data.set(data.get_selection(), 8, pickle.dumps(cargo))
 
     # Select the recording that corresponds to the playqueue item.
-    @add_emission_stopper()
+    @emission_stopper()
     def on_playqueue_select_selection_changed(self, selection):
         model, treeiter = selection.get_selected()
         if treeiter is None:
             return
-        playqueue_model_row = PlayqueueModelRow._make(model[treeiter])
 
         getter = attrgetter('genre', 'uuid', 'work_num', 'play_tracks')
-        self.set_selection(*getter(playqueue_model_row))
+        self.set_selection(*getter(playqueue_model_with_attrs[treeiter]))
 
     # Set the selection either from a playqueue selection (above), a
     # search result, or a newly created recording (on_save_button_clicked
@@ -562,14 +559,15 @@ class Selector(Gtk.Grid):
         # progresses.
         self.track_selector.view.scroll_playing_track(tracktuple.track_id)
 
-    def on_track_finished(self, player, n_tracks, track_id, uuid):
-        if uuid != self.recording_selector.model.recording.uuid:
+    def on_track_finished(self, player, n_tracks, track_id, uuid, work_num):
+        model = self.recording_selector.model
+        if (uuid, work_num) != (model.recording.uuid, model.work_num):
             return
 
         # If the first set in the play queue is selected, then the recording
         # in selector is the one that is playing. Otherwise, do nothing here.
         selection = playqueue_select.playqueue_treeselection
-        model, treeiter = selection.get_selected()
+        model, treeiter = selection.get_selected()  # model is playqueue_model
         if treeiter is None:
             return  # No set is selected.
 

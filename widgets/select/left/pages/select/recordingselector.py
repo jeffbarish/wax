@@ -16,15 +16,16 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GObject, Pango
 
 from . import genre_button
-from common.connector import add_emission_stopper, stop_emission
+from common.config import config
 from common.connector import register_connect_request
 from common.constants import SHORT, LONG
+from common.contextmanagers import stop_emission
+from common.decorators import emission_stopper
 from common.genrespec import genre_spec
 from common.utilities import debug
 from common.utilities import playable_tracks
 from contextlib import contextmanager
 from widgets import control_panel
-from widgets import config
 
 # Disconnecting the model before performing operations on the model
 # such as clear or multiple appends (populate) expedites these operations.
@@ -105,7 +106,7 @@ class RecordingSelector:
         getattr(treepath, direction)()
         self.view.selection.select_path(treepath)
 
-    @add_emission_stopper('changed')
+    @emission_stopper('changed')
     def on_selection_changed(self, selection):
         # If I ever use stop_emission on this signal, then this handler will
         # assure suppression of the signal because it will be called before
@@ -333,6 +334,8 @@ class RecordingModel(Gtk.ListStore):
         props_d = dict(self.work.props)
 
         times_played, = props_d['times played']
+        if not times_played:
+            times_played = 0
         props_d['times played'] = (str(int(times_played) + 1),)
 
         now = datetime.now()

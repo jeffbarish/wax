@@ -11,8 +11,10 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Pango, GObject
 
+from common.decorators import UniqObjectName
 from common.utilities import debug
 
+@UniqObjectName
 class DoubleButton(Gtk.Box):
     @GObject.Signal
     def clicked(self, arg: str):
@@ -26,17 +28,18 @@ class DoubleButton(Gtk.Box):
         return self
 
     def __init__(self):
-        super().__init__()
         self.set_orientation(Gtk.Orientation.HORIZONTAL)
 
         self.left_button = left_button = Gtk.Button()
+        style_context = left_button.get_style_context()
+        style_context.add_class('double-left')
         left_button.connect('clicked', self.on_left_button_clicked)
-        left_button.set_name('doublebutton-left')
         left_button.set_can_focus(False)
         left_button.set_sensitive(False)
 
         self.right_button = right_button = Gtk.MenuButton()
-        right_button.set_name('doublebutton-right')
+        style_context = right_button.get_style_context()
+        style_context.add_class('double-right')
         right_button.set_can_focus(False)
         right_button.set_sensitive(False)
 
@@ -59,7 +62,7 @@ class DoubleButton(Gtk.Box):
         self.config(0, False, False)
 
         max_width = max(map(self._get_label_pango_width, labels))
-        self.left_button.set_size_request(max_width+14, -1)
+        self.left_button.set_size_request(max_width + 14, -1)
 
     def set_labels(self, *labels):
         self.labels = labels

@@ -7,7 +7,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib, Pango
 
 from common.connector import register_connect_request
-from common.utilities import idle_add
+from common.decorators import idle_add
 from common.utilities import debug
 from widgets.select.right import playqueue_model_with_attrs as playqueue_model
 from widgets.select.right import select_right as playqueue_select
@@ -231,11 +231,6 @@ class MetadataView(Gtk.Grid):
     # -Track progress----------------------------------------------------------
     def on_track_started(self, player, tracktuple, grouptuple,
             track_duration, more_tracks, uuid):
-        # If track_controls_box is not visible, then play mode is not
-        # displaying metadata for the set that is playing.
-        if not self.track_controls_box.props.visible:
-            return
-
         self.update_track_metadata(tracktuple, grouptuple)
 
         # Initialize progress display.
@@ -245,12 +240,7 @@ class MetadataView(Gtk.Grid):
         self.display_track_time(0.0, self.track_duration)
         self.track_next_button.props.sensitive = more_tracks
 
-    def on_track_finished(self, player, n_tracks, track_id, uuid):
-        # If track_controls_box is not visible, then play mode is not
-        # displaying metadata for the set that is playing.
-        if not self.track_controls_box.props.visible:
-            return
-
+    def on_track_finished(self, player, n_tracks, track_id, uuid, work_num):
         self.track_next_button.props.sensitive = bool(n_tracks)
         self.tracktuple = None
 

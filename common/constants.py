@@ -3,7 +3,6 @@ from pathlib import Path
 CONFIG_DIR = Path('.config')
 QUEUEFILES = Path(CONFIG_DIR, 'queuefiles')
 TRANSFER = Path(CONFIG_DIR, 'transfer')
-# TRANSFER = Path.home() / 'Music'
 
 DATABASE = Path('recordings')
 DOCUMENTS = Path(DATABASE, 'documents')

@@ -10,6 +10,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio
 
 import common.initlogging
+from common.config import config
 from common.connector import traverse_widgets, connect_signals
 from common.connector import getattr_from_obj_with_name
 from common.utilities import debug
@@ -20,7 +21,6 @@ from player import player
 from ripper import ripper
 from widgets import top_widget
 from widgets import control_panel
-from widgets import config
 from widgets.edit.right.pages.importfiles import importer
 
 # Make pickle happy:

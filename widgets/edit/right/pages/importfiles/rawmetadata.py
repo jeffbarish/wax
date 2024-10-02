@@ -5,7 +5,6 @@ from collections import defaultdict
 from datetime import datetime
 from itertools import groupby
 from operator import itemgetter
-from pathlib import Path
 from string import punctuation, whitespace
 
 import gi
@@ -16,11 +15,10 @@ from mutagen.id3 import PictureType
 
 from . import importer
 from .tagextractors import extract
-from common.constants import TRANSFER, SOUND
-from common.constants import JPG_EXT, PDF_EXT
+from common.constants import TRANSFER
+from common.decorators import idle_add
 from common.types import TrackTuple
 from common.utilities import debug
-from common.utilities import idle_add
 from widgets import options_button
 
 REJECT_TAGS = ('bitrate', 'codec', 'bits_per_sample', 'sample_rate', 'discid',

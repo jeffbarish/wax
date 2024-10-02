@@ -7,11 +7,13 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib, Pango
 
+from common.decorators import UniqObjectName
+
 INTERVAL = 3
 
+@UniqObjectName
 class MessageLabel(Gtk.Label):
     def __init__(self):
-        super().__init__()
         self.set_can_focus(False)
         self.restore_cb = None
         self.maxlen = None
@@ -67,7 +69,7 @@ class MessageLabel(Gtk.Label):
             self.timer_is_running = False
             return False
         if self.maxlen and len(message) > self.maxlen:
-            message = message[:self.maxlen-1] + '…'
+            message = message[:self.maxlen - 1] + '…'
         self.set_markup(message)
         return True
 

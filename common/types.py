@@ -57,3 +57,66 @@ class DragCargo(NamedTuple):
     uuid: str
     work_num: int
 
+# Wrap a treemodel in a class with a __getitem__ to return a row wrapped
+# in a class that knows about field names. The wrapped row has __getattr__
+# and __setattr__ to convert named attributes to the appropriate numeric
+# index into the row. I use a NamedTuple to specify the fields because
+# it provides self-documentation of the fields. Also, I use the NamedTuple
+# by itself in situations where I only read from the model.
+class ModelWithAttrs:
+    def __init__(self, model, row_tuple):
+        self.model = model
+        self.row_tuple = row_tuple
+
+    def __getattr__(self, attr):
+        return getattr(self.model, attr)
+
+    def __getitem__(self, index):
+        row = self.model[index]
+        return ModelRowWithAttrs(self.row_tuple, row)
+
+    def __iter__(self):
+        return (ModelRowWithAttrs(self.row_tuple, row) for row in self.model)
+
+    def __len__(self):
+        return len(self.model)
+
+    def row_has_child(self, row):
+        return self.model.iter_has_child(row.iter)
+
+class ModelRowWithAttrs:
+    def __init__(self, row_tuple, row):
+        self.__dict__['row'] = row
+        self.__dict__['row_tuple'] = row_tuple._make(row)
+        self.__dict__['fields'] = row_tuple._fields
+
+    def __iter__(self):
+        return iter(self.__dict__['row_tuple'])
+
+    def __getattr__(self, attr):
+        # Look first in the row_tuple for attr and then in the row (e.g.,
+        # for iter or path).
+        try:
+            return getattr(self.row_tuple, attr)
+        except AttributeError:
+            try:
+                return getattr(self.row, attr)
+            except AttributeError:
+                message = f'{type(self).__name__} ' \
+                    f'(based on {type(self.row_tuple).__name__}) ' \
+                    f'has no attribute \'{attr}\''
+                raise AttributeError(message) from None
+
+    def __setattr__(self, attr, value):
+        self.__dict__['row_tuple'] = self.row_tuple._replace(**{attr: value})
+
+        index = self.fields.index(attr)
+        self.row[index] = value
+
+    def __repr__(self):
+        return repr(self.row_tuple)
+
+    def iterchildren(self):
+        return (ModelRowWithAttrs(self.row_tuple, row)
+                for row in self.row.iterchildren())
+

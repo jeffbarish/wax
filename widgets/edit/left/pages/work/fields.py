@@ -8,10 +8,11 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject, Gdk
 
-from common.connector import stop_emission, add_emission_stopper
+from common.config import config
 from common.constants import COMPLETERS, IMAGES_DIR, NOEXPAND
+from common.contextmanagers import stop_emission
+from common.decorators import emission_stopper
 from common.utilities import debug
-from widgets import config
 from .abbreviators import abbreviator
 
 # Create Gtk.EntryCompletion models for every file in COMPLETERS.
@@ -55,7 +56,7 @@ class WorkMetadataField(Gtk.Grid):
     def clear(cls):
         cls.metadata_fields.clear()
 
-    @add_emission_stopper('work-metadata-field-changed')
+    @emission_stopper('work-metadata-field-changed')
     def on_work_metadata_field_changed(self, field):
         pass
 
@@ -432,11 +433,6 @@ class NonceWorkMetadataField(SecondaryWorkMetadataField):
         first_entry.all_keys.remove(self.key)
 
 class ArrowButton(Gtk.Button):
-    # css name of Gtk.Button is 'button' by default.
-    def __new__(cls, *args, **kwargs):
-        cls.set_css_name('arrow-button')
-        return super().__new__(cls)
-
     def __init__(self, right):
         super().__init__()
         arrow_image_down = Gtk.Image.new_from_icon_name('pan-down-symbolic',
@@ -456,6 +452,9 @@ class ArrowButton(Gtk.Button):
     def set_sensitive(self, sensitive):
         self.set_image(self.right_images[sensitive])
         Gtk.Button.set_sensitive(self, sensitive)
+
+# css name of ArrowButton is 'button' by default.
+ArrowButton.set_css_name('arrow-button')
 
 class Entry(Gtk.Entry):
     # All Entry instances need to know the full set of keys and the key with
@@ -556,7 +555,7 @@ class Entry(Gtk.Entry):
 
         menu.show_all()
 
-    @add_emission_stopper('changed')
+    @emission_stopper('changed')
     def on_changed(self, entry):
         if hasattr(self, 'clear_item'):
             self.clear_item.set_sensitive(bool(self.props.text))

@@ -1,6 +1,8 @@
 """A form for acquiring cover art images."""
 
 from enum import Enum
+from mutagen import id3
+from mutagen.flac import Picture
 from pathlib import Path
 
 import gi
@@ -10,13 +12,14 @@ from gi.repository.GdkPixbuf import PixbufLoader
 
 from common.connector import register_connect_request
 from common.connector import getattr_from_obj_with_name
-from common.connector import add_emission_stopper, stop_emission
-from common.connector import QuietProperty
-from common.constants import IMAGES, IMAGES_DIR, TRANSFER
+from common.constants import IMAGES, IMAGES_DIR
 from common.constants import BORDER, THUMBNAIL_SIZE, NOEXPAND
+from common.contextmanagers import stop_emission
+from common.contextmanagers import cd_context
+from common.decorators import emission_stopper
+from common.descriptors import QuietProperty
 from common.musicbrainz import MBQuery, MusicBrainzError
 from common.utilities import debug
-from common.utilities import cd_context
 from ripper import ripper
 from widgets import options_button
 from widgets.messagelabel import MessageLabel
@@ -204,7 +207,7 @@ class ImagesEditor(Gtk.Box):
         self._images_changed = True
 
     @Gtk.Template.Callback()
-    @add_emission_stopper('row-deleted')
+    @emission_stopper('row-deleted')
     def on_images_liststore_row_deleted(self, model, path):
         self._images_changed = True
         self.queue_images_changed_message()
@@ -293,6 +296,25 @@ class ImagesEditor(Gtk.Box):
                 for i, size in enumerate(('image', 'thumbnail')):
                     new_path = Path(f'{size}-{row_index:02d}.jpg')
                     row[i].savev(str(new_path), 'jpeg', [], [])
+
+    def tag_cover_art(self, uuid):
+        if len(self.images_liststore) == 0:
+            return
+
+        pb = self.images_liststore[0][0]
+        success, jpg_data = pb.save_to_bufferv('jpeg', None, None)
+        if not success:
+            return
+
+        pic = Picture()
+        pic.data = jpg_data
+        pic.type = id3.PictureType.COVER_FRONT
+        pic.mime = 'image/jpeg'
+        pic.width = 500
+        pic.height = 500
+        pic.depth = 16
+
+        ripper.add_picture(pic)
 
     def append_images(self, images):
         for image_data, image_type in images:

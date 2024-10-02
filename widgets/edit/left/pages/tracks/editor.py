@@ -7,14 +7,14 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf, GObject
 
-from common.connector import signal_blocker
 from common.connector import getattr_from_obj_with_name
 from common.connector import register_connect_request
-from common.connector import QuietProperty
 from common.constants import NOEXPAND
+from common.contextmanagers import signal_blocker
+from common.descriptors import QuietProperty
 from common.types import TrackTuple, GroupTuple
+from common.types import ModelWithAttrs
 from common.utilities import debug
-from common.utilities import ModelWithAttrs
 from ripper import ripper
 from widgets import options_button
 from .findcommonprefix import find_commonprefix, stripper

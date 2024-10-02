@@ -2,18 +2,17 @@
 each pattern with the corresponding replacement string repl.  The final
 abbreviation is the accumulation of the effects of each item."""
 
-OMIT_FORENAMES = (r'(?u)[\w\s\':&.,-]+\s+(?!I{2,3}$|[JS]r\.*$)', '')
-OMIT_FORENAMES_R = (r'(?u),[\w\s\.]+', '')
-OMIT_ARTICLES = (r'^The\s|^A\s|^An\s', '')
-OMIT_KEY = (r'(?i)\s+in\s+.+\s+M(?:aj|in)or', '')
-OMIT_OPUS = (r'(?i)[,\s]+(?:Op[.\s]+|BWV[.\s]+|HWV[.\s]+|KV[.\s]+|[BDKLS]\.\s*)'
-        r'(?:[\d, ]+ and \d+|[\d,& ]*\d|\d+)', '')
-OMIT_QUOTE = (r' \(*\".+\"\)*', '')
-OMIT_SIR = (r'Sir |Dame ', '')
-
 import re
 
+OMIT_FORENAMES = r'(?u)[\w\s\':&.,-]+\s+(?!I{2,3}$|[JS]r\.*$)'
+OMIT_FORENAMES_R = r'(?u),[\w\s\.]+'
+OMIT_ARTICLES = r'^The\s|^A\s|^An\s'
+OMIT_KEY = r'(?i)\s+in\s+.+\s+M(?:aj|in)or'
+OMIT_OPUS = (r'(?i)[,\s]+(?:Op[.\s]+|BWV[.\s]+|HWV[.\s]+|KV[.\s]+|[BDKLS]\.\s*)'
+        r'(?:[\d, ]+ and \d+|[\d,& ]*\d|\d+)')
+OMIT_QUOTE = r' \(*\".+\"\)*'
+OMIT_SIR = r'Sir |Dame '
+
 def abbreviator(text):
-    pattern, replacement = OMIT_FORENAMES
-    return re.sub(pattern, replacement, text)
+    return re.sub(OMIT_FORENAMES, '', text)
 

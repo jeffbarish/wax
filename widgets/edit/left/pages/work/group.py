@@ -7,11 +7,13 @@ from gi.repository import Gtk, GObject
 
 from common.connector import getattr_from_obj_with_name
 from common.constants import NOEXPAND
+from common.decorators import UniqObjectName
 from common.utilities import debug
 from .fields import PrimaryWorkMetadataField
 from .fields import SecondaryWorkMetadataField
 from .fields import NonceWorkMetadataField
 
+@UniqObjectName
 class WorkMetadataGroup(Gtk.Frame):
     """A WorkMetadataGroup is a Gtk.Frame for one metadata class (i.e.,
     primary, secondary, or nonce)."""
@@ -20,11 +22,13 @@ class WorkMetadataGroup(Gtk.Frame):
     def work_metadata_group_changed(self):
         pass
 
+    def __new__(cls, *args, **kwargs):
+        cls.set_css_name('work-metadata-group')
+        return super().__new__(cls)
+
     def __init__(self, editor, metadata_class):
-        super().__init__()
         self.editor = editor
         self.metadata_class = metadata_class
-        self.set_name('work-metadata-group')
 
         # The type of fields in this group (e.g., PrimaryWorkMetadataField).
         field_type_name = f'{metadata_class.capitalize()}WorkMetadataField'

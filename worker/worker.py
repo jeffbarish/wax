@@ -27,8 +27,8 @@ class Worker:
         # Python interpreter. If the main program is running in a virtual
         # environment, the subprocess will too.
         argv = [sys.executable, ENGINE]
-        flags = (Gio.SubprocessFlags.STDOUT_PIPE |
-                Gio.SubprocessFlags.STDIN_PIPE)
+        flags = (Gio.SubprocessFlags.STDOUT_PIPE
+                | Gio.SubprocessFlags.STDIN_PIPE)
         subprocess = Gio.Subprocess.new(argv, flags)
 
         function_spec = (function.__code__, args)

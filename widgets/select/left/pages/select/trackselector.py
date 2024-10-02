@@ -8,12 +8,13 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject, GLib, Pango, Gdk
 
-from common.connector import add_emission_stopper
-from common.connector import stop_emission, stop_emission_with_name
 from common.connector import register_connect_request
+from common.contextmanagers import stop_emission
+from common.contextmanagers import stop_emission_with_name
+from common.decorators import emission_stopper
 from common.types import TrackTuple, GroupTuple
+from common.types import ModelWithAttrs
 from common.utilities import debug
-from common.utilities import ModelWithAttrs
 from common.utilities import playable_tracks
 from widgets import options_button
 from widgets.select.right import playqueue_model_with_attrs
@@ -223,14 +224,14 @@ class TrackView(Gtk.TreeView):
                         else:
                             self.selection.unselect_iter(child.iter)
 
-    @add_emission_stopper('changed')
+    @emission_stopper('changed')
     def on_selection_changed(self, selection):
         # We need to know whether the selection occurred because of a click
         # on a parent or on a child, or whether there was no click at all.
         # Note that selection has MULTIPLE set, so get_selected does not
         # work for getting the row that was just clicked.
         event = Gtk.get_current_event()
-        if not event:
+        if event is None:
             return
 
         valid, x, y = event.get_coords()
@@ -319,15 +320,17 @@ class TrackView(Gtk.TreeView):
             self.button_press_row = clicked_row
             with stop_emission(selection, 'changed'):
                 make_selections(clicked_row)
-        else:  # event_type == Gdk.EventType.BUTTON_RELEASE
-            bump_up = (clicked_row.path > self.button_press_row.path)
+        elif (row := getattr(self, 'button_press_row', None)):
+            # event_type == Gdk.EventType.BUTTON_RELEASE, but button_press_row
+            # might not be set as the button press might have been on
+            # something other than self (e.g., the context menu).
+            bump_up = (clicked_row.path > row.path)
             bump_method = ('previous', 'next')[bump_up]
 
             # If we ctrl-sweep from a simple into a group, then the
             # clicked_row will be a tuple with two elements. Terminate
             # when the first elements match. Otherwise, row will cycle
             # through top-level rows without ever matching the child.
-            row = self.button_press_row
             while row.path[:1] != clicked_row.path[:1]:
                 # button_press_row got updated in response to the
                 # BUTTON_PRESS event (which preceded this one), so

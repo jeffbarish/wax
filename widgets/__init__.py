@@ -1,9 +1,5 @@
 """Specify the sections of the main display."""
 
-from .config import Config
-config = Config()
-
-
 # Control panel.
 from .controlpanel import optionsbutton
 options_button = optionsbutton.OptionsButton()
@@ -32,6 +28,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
+from common.config import config
 RIGHT_PANEL_VBOX_WIDTH = config.geometry['right_panel_width']
 
 class TopWidget(Gtk.Grid):

@@ -88,7 +88,8 @@ class Ripper:
         # to send n_tracks only at the start of a rip session. GStreamer
         # numbers tracks from 1.
         track_num = self.cd_src.get_property('track')
-        self.send_reply('rip-track-started', self.uuid, n_tracks, track_num-1)
+        self.send_reply('rip-track-started', self.uuid, n_tracks,
+                track_num - 1)
 
         # Start the progress timer here to be sure that we get
         # rip-track-started before the first 'rip-track-position'.
@@ -106,11 +107,11 @@ class Ripper:
 
         self.part_file_name.rename(self.file_name)
         self.send_reply('rip-track-finished', self.uuid, self.disc_num,
-                track_num-1)
+                track_num - 1)
 
         next_track = track_num + 1
         if next_track <= self.n_tracks:
-            file_name = Path(self.disc_dir, f'{next_track-1:02d}.flac')
+            file_name = Path(self.disc_dir, f'{next_track - 1:02d}.flac')
             self.file_name = file_name
             self.part_file_name = Path(str(file_name) + '.part')
 
@@ -141,7 +142,7 @@ class Ripper:
         if success:
             file_size, mtime = self.get_size_mtime(self.part_file_name)
             self.send_reply('rip-track-position', self.uuid, self.disc_num,
-                    track_num-1, fraction)
+                    track_num - 1, fraction)
         return True
 
     def queue_read(self):

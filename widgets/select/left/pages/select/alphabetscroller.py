@@ -12,15 +12,15 @@ class AlphabetScroller(Gtk.Box):
 
     def __init__(self):
         super().__init__()
+
         self.set_name('alphabet-scroller')
         self.set_orientation(Gtk.Orientation.HORIZONTAL)
 
         for i in range(26):
             character = chr(ord('A') + i)
             button = Gtk.Button()
-            # If I set a css name for the button, then I lose the button
-            # styling specified by the theme.
-            button.set_name('alphabet-scroller-button')
+            style_context = button.get_style_context()
+            style_context.add_class('alphabet-scroller-button')
             button.set_relief(Gtk.ReliefStyle.NONE)
             button.set_can_focus(False)
             button.connect('clicked', self.on_button_clicked, character)

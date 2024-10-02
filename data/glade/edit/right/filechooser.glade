@@ -121,9 +121,9 @@
           <object class="GtkBox" id="file_chooser_controls_buttonbox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
+            <property name="spacing">1</property>
             <child>
               <object class="GtkButton" id="file_chooser_delete_button">
-                <property name="name">import-file-button</property>
                 <property name="visible">True</property>
                 <property name="sensitive">False</property>
                 <property name="can-focus">False</property>
@@ -137,6 +137,9 @@
                     <property name="pixbuf">data/images/trash.png</property>
                   </object>
                 </child>
+                <style>
+                  <class name="import-file-button"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -147,7 +150,6 @@
             </child>
             <child>
               <object class="GtkButton" id="file_chooser_newdir_button">
-                <property name="name">import-file-button</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="focus-on-click">False</property>
@@ -160,6 +162,9 @@
                     <property name="pixbuf">data/images/folder-new.png</property>
                   </object>
                 </child>
+                <style>
+                  <class name="import-file-button"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -170,7 +175,6 @@
             </child>
             <child>
               <object class="GtkButton" id="file_chooser_up_button">
-                <property name="name">import-file-button</property>
                 <property name="visible">True</property>
                 <property name="sensitive">False</property>
                 <property name="can-focus">False</property>
@@ -185,8 +189,7 @@
                   </object>
                 </child>
                 <style>
-                  <class name="linked"/>
-                  <class name="right"/>
+                  <class name="import-file-button"/>
                 </style>
               </object>
               <packing>

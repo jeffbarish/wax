@@ -187,13 +187,22 @@ class Ripper(GObject.Object):
         return rerip
 
     def tag_files(self, tags, tracks):
-        for track_p in Path(SOUND, self.uuid, str(self.disc_num)).iterdir():
+        disc_dir = Path(SOUND, self.uuid, str(self.disc_num))
+        for track_p in disc_dir.glob('*.flac'):
             track_num = int(track_p.stem)
             track = tracks[track_num]
             tags.update(title=track.title)
 
             tagger = FLAC(str(track_p))
             tagger.update(tags)
+            tagger.save()
+
+    def add_picture(self, picture):
+        disc_dir = Path(SOUND, self.uuid, str(self.disc_num))
+        for track_p in disc_dir.glob('*.flac'):
+            tagger = FLAC(str(track_p))
+            tagger.clear_pictures()
+            tagger.add_picture(picture)
             tagger.save()
 
     def reset(self):

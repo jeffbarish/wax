@@ -8,10 +8,10 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk
 from gi.repository import GdkPixbuf
 
+from common.config import config
 from common.connector import register_connect_request
 from common.constants import IMAGES, IMAGES_DIR
 from common.utilities import debug
-from widgets import config
 
 WIDTH = config.geometry['right_panel_width']
 

@@ -36,6 +36,7 @@ class OptionsButton(Gtk.MenuButton):
 
         self.sensitize_menuitem('Select', 'Clear queue', False)
         self.sensitize_menuitem('Select', 'Remove item', False)
+        self.sensitize_menuitem('Play', 'Restart', False)
         self.sensitize_menuitem('Edit', 'Clear', False)
         self.sensitize_menuitem('Edit', 'Delete', False)
         self.sensitize_menuitem('Edit', 'Query MB', False)
@@ -63,4 +64,10 @@ class OptionsButton(Gtk.MenuButton):
     def set_options_menu(self, mode):
         option_menu = self.option_menus[mode]
         self.set_popup(option_menu)
+
+    def get_menuitem(self, mode, option):
+        option_menu = self.option_menus[mode]
+        for menuitem in option_menu.get_children():
+            if menuitem.get_label() == option:
+                return menuitem
 
