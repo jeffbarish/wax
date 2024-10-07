@@ -228,10 +228,8 @@ class EditNotebook(Gtk.Notebook):
 
                 # If we get here, then the abort applies to an initial
                 # rip of disc 0. ripper deletes all the sound files, so
-                # we need to delete *all* works that were saved. There
-                # could be works in genres other than the current one.
-                # We get a list of relevant genres from the works dict
-                # in long. selector.on_recording_deleted deletes all
+                # we need to delete *all* works that were saved, regardless
+                # of genre. selector.on_recording_deleted deletes all
                 # the works for uuid in the current select genre.
                 self.delete_short_metadata(edit.uuid)
                 self.delete_long_metadata(edit.uuid)
@@ -352,7 +350,8 @@ class EditNotebook(Gtk.Notebook):
                 case 'Save revision':
                     old_work = self.recording.works[self.work_num]
                     if genre != old_work.genre:
-                        self.delete_short_metadata(old_work.genre, edit.uuid)
+                        self.delete_short_metadata_for_work(old_work.genre,
+                                edit.uuid, self.work_num)
                     self.recording = self.save_revision(new_work,
                             self.recording.works, tracks, props_rec,
                             list(ripper.disc_ids), self.work_num)
@@ -566,17 +565,23 @@ class EditNotebook(Gtk.Notebook):
                 # which needs to be deleted now.
                 pass
 
+    # Delete short metadata for uuid from the short file of every genre
+    # in which it appears. (Used when aborting a rip of disc_num = 0.)
     def delete_short_metadata(self, uuid):
+        # The dict of works in recording provides the genres in which
+        # uuid appears.
         with shelve.open(LONG, 'w') as recording_shelf:
             recording = recording_shelf[uuid]
 
-        # genres is the set of genres in which works for uuid appear.
+        # Multiple works with uuid could be in the same genre, so
+        # create a set to suppress duplication.
         genres = {work.genre for work in recording.works.values()}
 
         # Delete all works in the short file for genre for uuid.
         for genre in genres:
             self.delete_short_metadata_from_genre(genre, uuid)
 
+    # Delete short metadata for uuid from the short file only for genre.
     def delete_short_metadata_from_genre(self, genre, uuid):
         short_path = Path(SHORT, genre)
         tmp_path = Path(str(short_path) + '.tmp')
@@ -592,7 +597,26 @@ class EditNotebook(Gtk.Notebook):
                     pickle.dump(data_in, tmp_fo)
 
         # Replace the metadata file with the tmp file.
-        os.rename(tmp_path, short_path)
+        tmp_path.rename(short_path)
+
+    # Delete short metadata from the short file for genre for the solitary
+    # work with uuid and work_num. (Used when saving a revision.)
+    def delete_short_metadata_for_work(self, genre, uuid, work_num):
+        short_path = Path(SHORT, genre)
+        tmp_path = Path(str(short_path) + '.tmp')
+        with open(short_path, 'rb') as short_fo, \
+                open(tmp_path, 'wb') as tmp_fo:
+            while True:
+                try:
+                    data_in = pickle.load(short_fo)
+                except EOFError:
+                    break
+                metadata, uuid_in, work_num_in = data_in
+                if (uuid_in, work_num_in) != (uuid, work_num):
+                    pickle.dump(data_in, tmp_fo)
+
+        # Replace the metadata file with the tmp file.
+        tmp_path.rename(short_path)
 
     def write_long_metadata(self, recording):
         with shelve.open(LONG, 'w') as recording_shelf:
@@ -625,7 +649,7 @@ class EditNotebook(Gtk.Notebook):
                 pickle.dump(new_data_out, tmp_fo)
 
         # Replace the metadata file with the tmp file.
-        os.rename(tmp_path, short_path)
+        tmp_path.rename(short_path)
 
     # Weave the long and short primary metadata together.
     def weave(self, metadata_long, metadata_short):

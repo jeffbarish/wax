@@ -13,7 +13,7 @@ class RecordingTuple(NamedTuple):
 # Each (str, ...) is a namegroup. An empty namegroup is ('',).
 class WorkTuple(NamedTuple):
     genre: str
-    metadata: object    # [(str, ...), (str, ...), ...] (just values)
+    metadata: object    # [(str, ...), (str, ...), ...] (just long values)
     nonce: object       # [(str, (str, ...)), ...] (key, values)
     props: object       # [(str, (str, ...)), ...] (key, values)
     track_ids: object   # [(track_id1), ...]

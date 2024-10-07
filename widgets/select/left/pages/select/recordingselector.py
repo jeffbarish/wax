@@ -316,7 +316,7 @@ class RecordingModel(Gtk.ListStore):
             self.tracks_playable = playable_tracks(recording.tracks,
                     work.track_ids)
 
-            # self.recording.metadata is [(val1, ...), ...], whereas
+            # self.work.metadata is [(val1, ...), ...], whereas
             # self.metadata is [(key, (val1, ...)), ...].
             keys = genre_spec.all_keys(self.genre)
             self.metadata = list(zip(keys, work.metadata))
