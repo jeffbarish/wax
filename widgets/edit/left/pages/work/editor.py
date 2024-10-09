@@ -68,15 +68,15 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
             vbox.add(group)
             self.metadata_groups[metadata_class] = group
 
-        add_metadata_button = Gtk.Button.new_with_label('+Nonce')
-        add_metadata_button.set_can_focus(False)
-        add_metadata_button.connect('clicked',
-                self.on_add_metadata_button_clicked)
-        self.add_metadata_button = add_metadata_button
+        add_nonce_button = Gtk.Button.new_with_label('+Nonce')
+        add_nonce_button.set_can_focus(False)
+        add_nonce_button.connect('clicked',
+                self.on_add_nonce_button_clicked)
+        self.add_nonce_button = add_nonce_button
 
         hbox = Gtk.Box()
         hbox.set_orientation(Gtk.Orientation.HORIZONTAL)
-        hbox.pack_end(add_metadata_button, False, False, 3)
+        hbox.pack_end(add_nonce_button, False, False, 3)
         vbox.pack_start(hbox, False, False, 3)
 
         self.show_all()
@@ -100,7 +100,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         # Identify the widgets whose sensitivity is affected by set_sensitive.
         # genre_button is not in the list, so it remains sensitive when the
         # rest of the form is not.
-        self.main_widgets = list(group_types.values()) + [add_metadata_button]
+        self.main_widgets = list(group_types.values()) + [add_nonce_button]
 
     def set_sensitive(self, sensitive):
         for widget in self.main_widgets:
@@ -173,7 +173,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
 
         self.repopulate()
 
-    def on_add_metadata_button_clicked(self, button):
+    def on_add_nonce_button_clicked(self, button):
         group = self.metadata_groups['nonce']
         group.append_field()
         group.show()

@@ -138,6 +138,7 @@ class NonceWorkMetadataGroup(WorkMetadataGroup):
         vbox = self.get_child()
         for field in vbox.get_children():
             if not field.props.visible:
+                field.clear_values()
                 break
         else:
             field = NonceWorkMetadataField(self)
