@@ -39,7 +39,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         self.set_name('edit-work-page')
         self.tab_text = 'Work'
 
-        self.genre = None
+        self.edit_genre = None
 
         self.vbox = vbox = Gtk.Box()
         vbox.set_orientation(Gtk.Orientation.VERTICAL)
@@ -68,7 +68,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
             vbox.add(group)
             self.metadata_groups[metadata_class] = group
 
-        add_metadata_button = Gtk.Button.new_with_label('+Meta')
+        add_metadata_button = Gtk.Button.new_with_label('+Nonce')
         add_metadata_button.set_can_focus(False)
         add_metadata_button.connect('clicked',
                 self.on_add_metadata_button_clicked)
@@ -88,7 +88,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         register_connect_request('save-button', 'save-button-clicked',
                 self.on_save_button_clicked)
         register_connect_request('genre-button', 'genre-changed',
-                self.on_genre_changed)
+                self.on_select_genre_changed)
         register_connect_request('edit-ripcd', 'rip-create-clicked',
                 self.on_rip_create_clicked)
         register_connect_request('edit-ripcd.abort_button', 'clicked',
@@ -132,13 +132,13 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         if self.work_metadata_changed:
             edit_message_label.queue_message('work metadata changed')
 
-    def on_genre_changed(self, genre_button, genre):
+    def on_select_genre_changed(self, genre_button, genre):
         # The genre selection in edit mode tracks the genre_button in
         # selector unless editnotebook.changed is True.
         changed = getattr_from_obj_with_name('edit-left-notebook.changed')
         if not changed:
             self.genre_button.set_genre(genre)
-            self.genre = genre
+            self.edit_genre = genre
 
         # The Entry class in fields needs to know the set of all keys so
         # that it can populate the swap submenu in the context menu. At a
@@ -164,7 +164,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
             self._work_metadata_changed = True
 
     def on_edit_genre_changed(self, genre_button, genre):
-        self.genre = genre
+        self.edit_genre = genre
         self.prepare(genre)
 
         # The swap menu in Entry gets all permanent metadata keys for the
@@ -286,7 +286,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
 
     def extract_nonce_metadata(self, metadata: dict):
         # exclude is the sum of keys for primary and secondary.
-        exclude = genre_spec.all_keys(self.genre)
+        exclude = genre_spec.all_keys(self.edit_genre)
         return {k: [(v[0],) for v in val] for k, val in metadata.items()
                 if k not in exclude and any(v[0] for v in val)}
 
@@ -381,12 +381,12 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
 
         # As above. These tuples get unwoven in editnotebook.get_nonce.
         return list((k, list(f.values())) for k, f in self.items()
-                if k not in genre_spec.all_keys(self.genre))
+                if k not in genre_spec.all_keys(self.edit_genre))
 
     def unweave(self, metadata):
         metadata_long, metadata_short = [], []
         for key, values in metadata:
-            if key in config.genre_spec[self.genre]['primary']:
+            if key in config.genre_spec[self.edit_genre]['primary']:
                 values_long, values_short = zip(*values)
                 metadata_short.append(values_short)
             else:
@@ -477,7 +477,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
             if mo := re.match(r'[Ss]ymphony\D+(\d+)', name):
                 name = f'Symphony No. {mo.group(1)}'
             new_names.append(name)
-        all_keys = genre_spec.all_keys(self.genre)
+        all_keys = genre_spec.all_keys(self.edit_genre)
         keys = set(['work', 'title', 'album']).intersection(all_keys)
         if keys:
             key = keys.pop()  # probably only one key left at this point
@@ -536,7 +536,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         elapsed_time = time() - start_time
         print(f'map_metadata took {elapsed_time * 1000.0:.2f}ms')
 
-        self.populate(self.genre,
+        self.populate(self.edit_genre,
                 primary=primary_kv_list,
                 secondary=secondary_kv_list,
                 nonce=nonce_kv_list)

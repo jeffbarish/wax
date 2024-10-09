@@ -57,7 +57,7 @@ class EditNotebook(Gtk.Notebook):
         self.set_name('edit-left-notebook')
         self.recording = None
 
-        self.genre = None
+        self.select_genre = None
         self.work_num = 0
         self.action = Action.NONE
 
@@ -88,7 +88,7 @@ class EditNotebook(Gtk.Notebook):
         register_connect_request('selector.recording_selection', 'changed',
                 self.on_recording_selection_changed)
         register_connect_request('genre-button', 'genre-changed',
-                self.on_genre_changed)
+                self.on_select_genre_changed)
         register_connect_request('save-button', 'save-button-clicked',
                 self.on_save_button_clicked)
 
@@ -281,8 +281,7 @@ class EditNotebook(Gtk.Notebook):
                 or images_changed \
                 or docs_changed
 
-    # The select genre changed.
-    def on_genre_changed(self, genre_button, genre):
+    def on_select_genre_changed(self, genre_button, genre):
         # After a user clicks Save, changed is False even though a rip
         # might still be underway. The edit genre should not track the
         # select genre as long as the rip is underway.
@@ -292,7 +291,7 @@ class EditNotebook(Gtk.Notebook):
         work_metadata_editor = self.pages['work'].page_widget
         work_metadata_editor.prepare(genre)
 
-        self.genre = genre  # self.genre is a local copy of the select genre
+        self.select_genre = genre
 
         self.clear_all_forms()
         self.set_sensitive(False)
@@ -317,8 +316,8 @@ class EditNotebook(Gtk.Notebook):
         # select a recording. The edit genre needs to be brought into
         # synchronization with the select genre.
         work_metadata_editor = self.pages['work'].page_widget
-        if self.genre != work_metadata_editor.genre:
-            work_metadata_editor.genre_button.genre = self.genre
+        if self.select_genre != work_metadata_editor.edit_genre:
+            work_metadata_editor.genre_button.genre = self.select_genre
 
         self.clear_all_forms()
         self.populate_forms_from_selection(selection)
@@ -327,7 +326,7 @@ class EditNotebook(Gtk.Notebook):
         self.action = (Action.REVISE, Action.NONE)[treeiter is None]
 
     def on_save_button_clicked(self, button, label):
-        self.genre = genre = self.get_work_metadata_editor_genre()
+        self.select_genre = genre = self.get_work_metadata_editor_genre()
         work_long, work_short = self.get_work_metadata()
         nonce = self.get_nonce()
         tracks, trackids_playable, trackgroups = self.get_tracks()
@@ -414,13 +413,13 @@ class EditNotebook(Gtk.Notebook):
             self._revise_mode = False
             self.recording = None
         else:
-            if self.genre != model.genre:
-                work_metadata_editor = self.pages['work'].page_widget
-                work_metadata_editor.genre_button.genre = model.genre
-                work_metadata_editor.prepare(model.genre)
+            work_metadata_editor = self.pages['work'].page_widget
+            if self.select_genre != work_metadata_editor.edit_genre:
+                work_metadata_editor.genre_button.genre = self.select_genre
+                work_metadata_editor.prepare(self.select_genre)
 
             selection = selector.recording_selection
-            self.populate_forms_from_selection(selection)
+            GLib.idle_add(self.populate_forms_from_selection, selection)
             self.revise_mode = True
 
         self._changed = False
@@ -460,7 +459,7 @@ class EditNotebook(Gtk.Notebook):
             # in the list associated with a key.
             row = RecordingModelRow._make(model_filter[treeiter])
             work_metadata_editor = self.pages['work'].page_widget
-            work_metadata_editor.populate(self.genre,
+            work_metadata_editor.populate(self.select_genre,
                     primary=list(self.weave(metadata, row.short)),
                     secondary=list(self.reformat(metadata[len(row.short):])),
                     nonce=list(self.reformat(work.nonce)))
@@ -516,7 +515,7 @@ class EditNotebook(Gtk.Notebook):
 
     def learn_new_completions(self, work_long):
         work_metadata_editor = self.pages['work'].page_widget
-        work_genre = work_metadata_editor.genre
+        work_genre = work_metadata_editor.work_genre
 
         all_keys = sum(config.genre_spec[work_genre].values(), [])
         for key, value in zip(all_keys, work_long):
@@ -662,7 +661,7 @@ class EditNotebook(Gtk.Notebook):
 
     def get_work_metadata_editor_genre(self):
         work_metadata_editor = self.pages['work'].page_widget
-        return work_metadata_editor.genre
+        return work_metadata_editor.work_genre
 
     def get_work_metadata(self):
         work_metadata_editor = self.pages['work'].page_widget
@@ -672,7 +671,7 @@ class EditNotebook(Gtk.Notebook):
         # Unweave long and short primary metadata.
         metadata_long, metadata_short = [], []
         for key, values in work_metadata:
-            genre = work_metadata_editor.genre
+            genre = work_metadata_editor.work_genre
             if key in config.genre_spec[genre]['primary']:
                 values_long, values_short = zip(*values)
                 metadata_short.append(values_short)
@@ -716,7 +715,7 @@ class EditNotebook(Gtk.Notebook):
         uuid = self.recording.uuid
         work_num = self.work_num
 
-        short_path = Path(SHORT, self.genre)
+        short_path = Path(SHORT, self.select_genre)
         tmp_path = Path(str(short_path) + '.tmp')
         with open(short_path, 'rb') as short_fo, \
                 open(tmp_path, 'wb') as tmp_fo:
