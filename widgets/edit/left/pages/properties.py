@@ -49,8 +49,7 @@ class PropertiesEditor(Gtk.ScrolledWindow):
             hbox.pack_start(key_label, False, False, 6)
 
             value_entry = Gtk.Entry()
-            value_entry.connect('changed',
-                    self.on_entry_changed)
+            value_entry.connect('changed', self.on_entry_changed)
             hbox.pack_start(value_entry, True, True, 6)
 
             self.entries[key] = value_entry
@@ -58,8 +57,7 @@ class PropertiesEditor(Gtk.ScrolledWindow):
         self.add(vbox)
         self.show_all()
 
-        self.connect('notify::properties-changed',
-                self.on_properties_changed)
+        self.connect('notify::properties-changed', self.on_properties_changed)
 
         register_connect_request('save-button', 'save-button-clicked',
                 self.on_save_button_clicked)
@@ -85,6 +83,14 @@ class PropertiesEditor(Gtk.ScrolledWindow):
 
     def on_entry_changed(self, entry):
         self._properties_changed = True
+
+        # Find the key for entry. If the key is 'times played' and the
+        # value got set to 0, clear the 'date played' entry.
+        for key, val in self.entries.items():
+            if val is entry and key == 'times played':
+                if entry.get_text() == '0':
+                    self.entries['date played'].set_text('')
+                break
 
     def on_save_button_clicked(self, button, label):
         self._properties_changed = False
