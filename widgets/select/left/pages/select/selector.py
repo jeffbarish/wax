@@ -320,12 +320,16 @@ class Selector(Gtk.Grid):
         # recordingselector reloads the model.
         if new_genre != genre_button.genre:
             genre_button.set_genre(new_genre)
-            for obj in [
-                    self,
-                    self.recording_selector,
-                    getattr_from_obj_with_name('edit-work-page'),
-                    getattr_from_obj_with_name('edit-left-notebook')]:
-                getattr(obj, 'on_genre_changed')(genre_button, new_genre)
+
+            self.on_genre_changed(genre_button, new_genre)
+
+            self.recording_selector.on_genre_changed(genre_button, new_genre)
+
+            work_editor = getattr_from_obj_with_name('edit-work-page')
+            work_editor.on_select_genre_changed(genre_button, new_genre)
+
+            editnotebook = getattr_from_obj_with_name('edit-left-notebook')
+            editnotebook.on_select_genre_changed(genre_button, new_genre)
 
         # Wait for all the other handlers for genre-changed to finish before
         # finalizing the selection.
