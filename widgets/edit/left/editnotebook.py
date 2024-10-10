@@ -326,14 +326,14 @@ class EditNotebook(Gtk.Notebook):
         self.action = (Action.REVISE, Action.NONE)[treeiter is None]
 
     def on_save_button_clicked(self, button, label):
-        self.select_genre = genre = self.get_work_metadata_editor_genre()
+        edit_genre = self.get_work_metadata_editor_genre()
         work_long, work_short = self.get_work_metadata()
         nonce = self.get_nonce()
         tracks, trackids_playable, trackgroups = self.get_tracks()
         props_rec, props_wrk = self.get_props()
 
         new_work = WorkTuple(
-            genre=genre,
+            genre=edit_genre,
             metadata=work_long,
             nonce=nonce,
             props=props_wrk,
@@ -348,7 +348,7 @@ class EditNotebook(Gtk.Notebook):
             match label:
                 case 'Save revision':
                     old_work = self.recording.works[self.work_num]
-                    if genre != old_work.genre:
+                    if edit_genre != old_work.genre:
                         self.delete_short_metadata_for_work(old_work.genre,
                                 edit.uuid, self.work_num)
                     self.recording = self.save_revision(new_work,
@@ -372,7 +372,7 @@ class EditNotebook(Gtk.Notebook):
             self._revise_mode = True
 
         self.write_long_metadata(self.recording)
-        self.write_short_metadata(work_short, genre,
+        self.write_short_metadata(work_short, edit_genre,
                 edit.uuid, self.work_num)
 
         # Get edit-images-page to write the current images to files.
@@ -392,13 +392,14 @@ class EditNotebook(Gtk.Notebook):
         # Emit recording-saved to trigger updates to the models.
         # The signal is connected to handlers in select.selector,
         # playnotebook, coverartviewer, playqueue, files, and savebutton.
-        self.emit('recording-saved', genre)
+        self.emit('recording-saved', edit_genre)
 
         options_button.sensitize_menuitem('Edit', 'Delete', True)
 
         self.learn_new_completions(work_long)
 
         self._changed = False
+        self.select_genre = edit_genre
 
     def clear_or_repopulate_from_selection(self):
         # Clear returns edit mode to the last saved state. It stops an
@@ -514,10 +515,9 @@ class EditNotebook(Gtk.Notebook):
             child.set_sensitive(sensitive)
 
     def learn_new_completions(self, work_long):
-        work_metadata_editor = self.pages['work'].page_widget
-        work_genre = work_metadata_editor.work_genre
+        edit_genre = self.get_work_metadata_editor_genre()
 
-        all_keys = sum(config.genre_spec[work_genre].values(), [])
+        all_keys = sum(config.genre_spec[edit_genre].values(), [])
         for key, value in zip(all_keys, work_long):
             # Secondary metadata might not have a value.
             if not any(value):
@@ -661,7 +661,7 @@ class EditNotebook(Gtk.Notebook):
 
     def get_work_metadata_editor_genre(self):
         work_metadata_editor = self.pages['work'].page_widget
-        return work_metadata_editor.work_genre
+        return work_metadata_editor.edit_genre
 
     def get_work_metadata(self):
         work_metadata_editor = self.pages['work'].page_widget
@@ -671,7 +671,7 @@ class EditNotebook(Gtk.Notebook):
         # Unweave long and short primary metadata.
         metadata_long, metadata_short = [], []
         for key, values in work_metadata:
-            genre = work_metadata_editor.work_genre
+            genre = work_metadata_editor.edit_genre
             if key in config.genre_spec[genre]['primary']:
                 values_long, values_short = zip(*values)
                 metadata_short.append(values_short)
