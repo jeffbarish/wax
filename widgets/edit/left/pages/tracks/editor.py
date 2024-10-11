@@ -259,7 +259,7 @@ class TracksMetadataEditor(Gtk.Box):
 
         self._track_metadata_changed = False
 
-    def update_button_sensitivity(self):
+    def update_button_config(self):
         model = self.track_treestore
         sensitive = any(row.playable for row in self.track_model)
 
@@ -285,7 +285,9 @@ class TracksMetadataEditor(Gtk.Box):
         for child_edit_track_row in edit_track_row.iterchildren():
             child_edit_track_row.playable = new_value
 
-        self.update_button_sensitivity()
+        # Wait until after all the rows are populated to update the
+        # button state.
+        GLib.idle_add(self.update_button_config)
 
     def on_select_button_clicked(self, button, select):
         actions = {'all': self.select_all,

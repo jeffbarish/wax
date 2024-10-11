@@ -109,6 +109,8 @@ class Playqueue(Gtk.Box):
                 'recording-saved', self.on_recording_saved)
         register_connect_request('edit-left-notebook',
                 'work-deleted', self.on_work_deleted)
+        register_connect_request('edit-left-notebook',
+                'recording-deleted', self.on_recording_deleted)
         register_connect_request('search-incremental',
                 'selection-changed',
                 self.on_search_incremental_selection_changed)
@@ -125,7 +127,7 @@ class Playqueue(Gtk.Box):
     def on_search_incremental_selection_changed(self, searchincremental,
             genre, uuid, work_num, tracks):
         for row in playqueue_model_with_attrs:
-            if (uuid, work_num) == (row.uuid, row.work_num):
+            if (row.uuid, row.work_num) == (uuid, work_num):
                 with stop_emission(self.playqueue_treeselection, 'changed'):
                     self.playqueue_treeselection.select_iter(row.iter)
                 break
@@ -329,14 +331,15 @@ class Playqueue(Gtk.Box):
         track_view = getattr_from_obj_with_name('track-view')
         tracks = track_view.get_selected_tracks()
         if model.recording is not None:
-            self.select_matching_set(tracks, model.recording.uuid)
+            uuid = model.recording.uuid
+            self.select_matching_set(tracks, uuid, model.work_num)
 
-    # Called from selector.on_track_selection_changed.
     @idle_add
-    def select_matching_set(self, tracks, uuid):
+    def select_matching_set(self, tracks, uuid, work_num):
         # Traverse the rows of playqueue looking for a match.
         for row in playqueue_model_with_attrs:
-            if row.uuid == uuid and tracks == row.play_tracks:
+            if (row.uuid, row.work_num) == (uuid, work_num) \
+                    and tracks == row.play_tracks:
                 with stop_emission(self.playqueue_treeselection, 'changed'):
                     self.playqueue_treeselection.select_iter(row.iter)
                 break
@@ -366,7 +369,7 @@ class Playqueue(Gtk.Box):
         uuid = recording.uuid
 
         for row in playqueue_model_with_attrs:
-            if row.uuid == uuid:
+            if (row.uuid, row.work_num) == (uuid, work_num):
                 primary_keys = config.genre_spec[genre]['primary']
                 work_long = recording.works[work_num].metadata
                 tracks_metadata = recording.tracks
@@ -398,9 +401,14 @@ class Playqueue(Gtk.Box):
                     playqueue_play.update_image(row.path[0], thumbnail)
 
     def on_work_deleted(self, editnotebook, genre, uuid, work_num):
-        for i, row in enumerate(playqueue_model_with_attrs):
+        for row in reversed(playqueue_model_with_attrs):
+            if (row.uuid, row.work_num) == (uuid, work_num):
+                del playqueue_model[row.path]
+
+    def on_recording_deleted(self, editnotebook, uuid):
+        for row in reversed(playqueue_model_with_attrs):
             if row.uuid == uuid:
-                del playqueue_model[i]
+                del playqueue_model[row.path]
 
     # Called from select.random to enqueue a randomly selected recording.
     def enqueue_recording(self, genre, recording, work_num, play_tracks):
