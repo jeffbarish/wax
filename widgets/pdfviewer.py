@@ -19,6 +19,12 @@ class MyDocsListstore:
     def __getitem__(self, index):
         return self.pdfviewer_liststore.__getitem__(index)
 
+    def __delitem__(self, treeiter):
+        del self.pdfviewer_liststore[treeiter]
+
+        path = self.pdfviewer_liststore.get_path(treeiter)
+        del self.pdf_data[path[0]]
+
     def __iter__(self):
         return zip(self.name_iter(), self.pdf_data)
 

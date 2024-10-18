@@ -83,7 +83,7 @@ class DocsEditor(Gtk.Box):
     @Gtk.Template.Callback()
     def on_docs_delete_button_clicked(self, button):
         model, treeiter = self.docs_treeselection.get_selected()
-        del model[treeiter]
+        del self.my_docs_liststore[treeiter]
 
         self.pdf_viewer.props.visible = bool(len(model))
 
