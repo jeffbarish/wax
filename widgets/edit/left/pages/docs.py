@@ -81,6 +81,11 @@ class DocsEditor(Gtk.Box):
             self.pdf_viewer.show_all()
 
     @Gtk.Template.Callback()
+    def on_docs_liststore_row_deleted(self, model, path):
+        if len(model):
+            self.docs_treeselection.select_path('0')
+
+    @Gtk.Template.Callback()
     def on_docs_delete_button_clicked(self, button):
         model, treeiter = self.docs_treeselection.get_selected()
         del self.my_docs_liststore[treeiter]

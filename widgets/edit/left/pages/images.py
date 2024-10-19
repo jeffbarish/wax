@@ -330,7 +330,7 @@ class ImagesEditor(Gtk.Box):
         self._images_changed = True
         self.queue_images_changed_message()
 
-        self.thumbnail_treeselection.select_path(Gtk.TreePath.new_first())
+        self.thumbnail_treeselection.select_path('0')
         self.image_delete_button.set_sensitive(True)
 
     def _load_pixbuf(self, data):
