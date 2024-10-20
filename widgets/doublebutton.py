@@ -94,6 +94,10 @@ class DoubleButton(Gtk.Box):
         label = menuitem.get_label()
         self.left_button.set_label(label)
 
+        # The next statement should not be necessary, but I once saw the
+        # label of the left button get changed, but it was not visible.
+        self.left_button.show_all()
+
     def on_left_button_clicked(self, button):
         label = button.get_label()
         self.emit('clicked', label)

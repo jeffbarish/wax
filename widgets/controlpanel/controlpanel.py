@@ -76,7 +76,7 @@ class ControlPanel(GObject.Object):
     def on_playqueue_model_row_inserted(self, model, path, treeiter):
         self.set_play_button_visible(True)
         options_button.sensitize_menuitem('Select', 'Clear queue', True)
-        options_button.sensitize_menuitem('Select', 'Remove item', True)
+        options_button.sensitize_menuitem('Select', 'Remove set', True)
 
     def on_playqueue_model_row_deleted(self, model, path):
         if not len(model):
@@ -88,7 +88,7 @@ class ControlPanel(GObject.Object):
     def on_playqueue_select_playqueue_treeselection_changed(self, selection):
         model, treeiter = selection.get_selected()
         visible = bool(treeiter)
-        options_button.sensitize_menuitem('Select', 'Remove item', visible)
+        options_button.sensitize_menuitem('Select', 'Remove set', visible)
 
     def set_play_button_visible(self, visible):
         self.view.play_button.props.visible = visible

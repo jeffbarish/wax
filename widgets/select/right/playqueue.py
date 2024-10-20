@@ -119,8 +119,8 @@ class Playqueue(Gtk.Box):
         register_connect_request('track-view.selection',
                 'changed', self.on_track_selection_changed)
 
-        options_button.connect_menuitem('Select', 'Remove item',
-                self.on_options_select_remove_item)
+        options_button.connect_menuitem('Select', 'Remove set',
+                self.on_options_select_remove_set)
         options_button.connect_menuitem('Select', 'Clear queue',
                 self.on_options_select_clear_queue)
 
@@ -134,7 +134,7 @@ class Playqueue(Gtk.Box):
         else:
             self.playqueue_treeselection.unselect_all()
 
-    def on_options_select_remove_item(self, menuitem):
+    def on_options_select_remove_set(self, menuitem):
         self.on_remove_activated(menuitem)
 
     def on_options_select_clear_queue(self, menuitem):

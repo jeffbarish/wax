@@ -447,7 +447,7 @@ class EditNotebook(Gtk.Notebook):
             work = model.work
 
             # If no edit is underway, set ripper.uuid to the selected
-            # recording in case the user clicks Add CD to rerip the tracks.
+            # recording in case the user clicks Add to rerip the tracks.
             ripper.init_disc(recording.uuid, recording.discids)
 
             # Unlike play mode, edit mode handles each category of

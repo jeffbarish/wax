@@ -65,7 +65,7 @@ class RipCD(Gtk.Box):
         self.ripcd_stack_box.reorder_child(doublebutton, 0)
 
         self.message_label = MessageLabel()
-        self.message_label.set_maxlen(47)
+        self.message_label.set_maxlen(29)
         self.message_label.show()
         self.ripcd_message_label_box.pack_start(self.message_label, *NOEXPAND)
 
@@ -143,7 +143,7 @@ class RipCD(Gtk.Box):
                 self.emit('rip-create-clicked')
                 uuid = edit.make_uuid()
                 self.create(uuid)
-            case 'Add CD':
+            case 'Add':
                 self.add_cd()
 
     @Gtk.Template.Callback()

@@ -14,7 +14,7 @@ class OptionsButton(Gtk.MenuButton):
         self.set_name('options-button')
 
         self.option_menus = option_menus = {
-            'Select': ['Remove item', 'Clear queue'],
+            'Select': ['Remove set', 'Clear queue'],
             'Play': ['Restart'],
             'Edit': ['Show unicode keyboard', 'Query MB', 'Clear', 'Delete'],
             'Config': ['Help', 'About']
@@ -35,7 +35,7 @@ class OptionsButton(Gtk.MenuButton):
         self.set_options_menu('Select')
 
         self.sensitize_menuitem('Select', 'Clear queue', False)
-        self.sensitize_menuitem('Select', 'Remove item', False)
+        self.sensitize_menuitem('Select', 'Remove set', False)
         self.sensitize_menuitem('Play', 'Restart', False)
         self.sensitize_menuitem('Edit', 'Clear', False)
         self.sensitize_menuitem('Edit', 'Delete', False)

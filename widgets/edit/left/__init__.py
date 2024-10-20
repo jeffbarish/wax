@@ -17,7 +17,7 @@ class EditLeft(Gtk.Box):
 
         self.edit_message_label = edit_message_label = MessageLabel()
         edit_message_label.set_margin_start(6)
-        edit_message_label.set_maxlen(46)
+        edit_message_label.set_maxlen(55)
         edit_message_label.set_name('edit-message-label')
 
         save_button = SaveButton()

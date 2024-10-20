@@ -65,7 +65,7 @@ class ImportFiles(Gtk.Paned):
                 uuid = edit.make_uuid()
 
                 # Prepare ripper with the uuid in case the next operation is
-                # Add CD.
+                # Add.
                 ripper.init_disc(uuid, ['0'])
 
                 self.import_(uuid)

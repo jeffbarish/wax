@@ -83,6 +83,7 @@ class ImagesEditor(Gtk.Box):
         self.set_spacing(2)
 
         self.message_label = message_label = MessageLabel()
+        self.message_label.set_maxlen(54)
         self.image_buttons_box.pack_start(message_label, *NOEXPAND)
 
         self.image = image = Image()
@@ -504,3 +505,4 @@ class Image(Gtk.Image):
 
 
 page_widget = ImagesEditor()
+
