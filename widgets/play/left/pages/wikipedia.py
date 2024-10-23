@@ -9,6 +9,7 @@ gi.require_version('WebKit2', '4.1')
 from gi.repository import Gtk, WebKit2
 
 from common.connector import register_connect_request
+from common.constants import EXPAND
 from common.utilities import debug
 from worker import worker
 
@@ -32,7 +33,7 @@ class WikipediaView(Gtk.Box):
         self.webview = webview = WebKit2.WebView()
         webview.connect('notify::uri', self.on_uri_prop_changed)
         webview.show()
-        self.pack_end(webview, True, True, 0)
+        self.pack_end(webview, *EXPAND)
 
         register_connect_request('selector.recording_selection', 'changed',
                 self.on_recording_selection_changed)

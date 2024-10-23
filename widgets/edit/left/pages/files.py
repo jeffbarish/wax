@@ -8,7 +8,9 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Pango
 
-from common.constants import SOUND, DOCUMENTS, IMAGES, SND_EXT, NOEXPAND
+from common.constants import SOUND, DOCUMENTS, IMAGES
+from common.constants import SND_EXT
+from common.constants import EXPAND, NOEXPAND
 from common.connector import register_connect_request
 from common.connector import getattr_from_obj_with_name
 from common.decorators import UniqObjectName
@@ -266,7 +268,7 @@ class ListBox(Gtk.Box):
         self.pack_start(title_label, *NOEXPAND)
 
         self.files_list_treeview = FilesListTreeView()
-        self.pack_start(self.files_list_treeview, True, True, 0)
+        self.pack_start(self.files_list_treeview, *EXPAND)
 
     def set_label_text(self, text):
         self.title_label.set_text(text)

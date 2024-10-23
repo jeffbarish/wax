@@ -11,7 +11,7 @@ from .rawmetadata import RawMetadata
 from common.cddrivewatcher import cd_drive_watcher
 from common.connector import getattr_from_obj_with_name
 from common.connector import register_connect_request
-from common.constants import NOEXPAND
+from common.constants import EXPAND, NOEXPAND
 from common.decorators import idle_add
 from common.types import TrackTuple
 from common.utilities import debug
@@ -65,9 +65,8 @@ class RipCD(Gtk.Box):
         self.ripcd_stack_box.reorder_child(doublebutton, 0)
 
         self.message_label = MessageLabel()
-        self.message_label.set_maxlen(29)
         self.message_label.show()
-        self.ripcd_message_label_box.pack_start(self.message_label, *NOEXPAND)
+        self.ripcd_message_label_box.pack_start(self.message_label, *EXPAND)
 
         self.raw_metadata = RawMetadata()
         self.raw_metadata_scrolledwindow.add(self.raw_metadata)

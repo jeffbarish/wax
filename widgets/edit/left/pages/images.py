@@ -1,5 +1,6 @@
 """A form for acquiring cover art images."""
 
+import re
 from enum import Enum
 from mutagen import id3
 from mutagen.flac import Picture
@@ -13,11 +14,13 @@ from gi.repository.GdkPixbuf import PixbufLoader
 from common.connector import register_connect_request
 from common.connector import getattr_from_obj_with_name
 from common.constants import IMAGES, IMAGES_DIR
-from common.constants import BORDER, THUMBNAIL_SIZE, NOEXPAND
+from common.constants import BORDER, THUMBNAIL_SIZE
+from common.constants import EXPAND, NOEXPAND
 from common.contextmanagers import stop_emission
 from common.contextmanagers import cd_context
 from common.decorators import emission_stopper
 from common.descriptors import QuietProperty
+from common.initlogging import logger
 from common.musicbrainz import MBQuery, MusicBrainzError
 from common.utilities import debug
 from ripper import ripper
@@ -83,8 +86,8 @@ class ImagesEditor(Gtk.Box):
         self.set_spacing(2)
 
         self.message_label = message_label = MessageLabel()
-        self.message_label.set_maxlen(54)
-        self.image_buttons_box.pack_start(message_label, *NOEXPAND)
+        self.image_buttons_box.pack_start(message_label, *EXPAND)
+        message_label.show_all()
 
         self.image = image = Image()
         self.image_box.pack_start(image, False, True, 0)
@@ -364,14 +367,16 @@ class ImagesEditor(Gtk.Box):
             self._get_amazon_image(mbquery, disc_num)
         except Exception:
             message = 'Amazon: error getting image'
-            edit_source = getattr_from_obj_with_name('edit-ripcd')
-            edit_source.queue_message(message)
+            self.message_label.queue_message(message,
+                    self.image_provenance_label.hide,
+                    self.image_provenance_label.show)
 
         # This function takes a while to run.
         def get_caa_image_urls(mbid, disc_num):
             import musicbrainzngs as mb
             image_list = mb.get_image_list(mbid)
             caa_image_urls = [image['image'] for image in image_list['images']]
+            raise Exception('Exception in get_caa_image_urls')
             return (caa_image_urls, disc_num)
 
         # Any click of create_button sets cancellable. If the click occurred
@@ -398,12 +403,14 @@ class ImagesEditor(Gtk.Box):
 
     def _get_caa_image_urls_cb(self, success, result):
         if not success:
+            logger.error(f'CAA access failed with message:\n\n{result}')
             if 'Error 404' in result:
                 message = 'CAA: image not found'
             else:
-                message = result.removeprefix('caused by: ')
-            edit_source = getattr_from_obj_with_name('edit-ripcd')
-            edit_source.queue_message(message)
+                message = re.sub(r'^.*caused by:\s*', '', result).replace('\n', '/')
+            self.message_label.queue_message(message,
+                    self.image_provenance_label.hide,
+                    self.image_provenance_label.show)
             return
 
         caa_image_urls, disc_num = result

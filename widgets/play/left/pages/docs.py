@@ -7,6 +7,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
 from common.constants import DOCUMENTS, TRANSFER
+from common.constants import EXPAND
 from common.utilities import debug
 from widgets.pdfviewer import MyDocsListstore, PdfViewer
 
@@ -35,7 +36,7 @@ class DocsView(Gtk.Box):
         self.pdf_data = []
 
         self.pdf_viewer = pdf_viewer = PdfViewer()
-        self.pack_end(pdf_viewer, True, True, 0)
+        self.pack_end(pdf_viewer, *EXPAND)
         self.show()
 
     @Gtk.Template.Callback()

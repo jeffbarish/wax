@@ -114,9 +114,6 @@
               </packing>
             </child>
             <child>
-              <placeholder/>
-            </child>
-            <child>
               <object class="GtkButton" id="image_download_button">
                 <property name="visible">True</property>
                 <property name="sensitive">False</property>
@@ -139,7 +136,7 @@
                 <property name="expand">False</property>
                 <property name="fill">False</property>
                 <property name="pack-type">end</property>
-                <property name="position">3</property>
+                <property name="position">2</property>
               </packing>
             </child>
             <child>
@@ -164,8 +161,11 @@
                 <property name="expand">False</property>
                 <property name="fill">False</property>
                 <property name="pack-type">end</property>
-                <property name="position">4</property>
+                <property name="position">3</property>
               </packing>
+            </child>
+            <child>
+              <placeholder/>
             </child>
           </object>
           <packing>

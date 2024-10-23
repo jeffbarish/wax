@@ -10,6 +10,7 @@ from gi.repository import Gtk
 
 from common.constants import DOCUMENTS, TRANSFER
 from common.constants import PDF_EXT
+from common.constants import EXPAND
 from common.contextmanagers import cd_context
 from common.descriptors import QuietProperty
 from common.utilities import debug
@@ -57,7 +58,7 @@ class DocsEditor(Gtk.Box):
         self.pdf_data = []
 
         self.pdf_viewer = pdf_viewer = PdfViewer()
-        self.pack_end(pdf_viewer, True, True, 0)
+        self.pack_end(pdf_viewer, *EXPAND)
         self.show()
 
     def on_options_edit_clear_activate(self, menuitem):

@@ -2,6 +2,7 @@
 INTERVAL seconds."""
 
 import queue
+from string import ascii_letters
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -22,23 +23,37 @@ class MessageLabel(Gtk.Label):
         attr = Pango.attr_foreground_new(0xdcdc, 0x1414, 0x3c3c)
         attrs = Pango.AttrList.new()
         attrs.insert(attr)
+        font_description = Pango.FontDescription.from_string('Monospace 9')
+        attr = Pango.attr_font_desc_new(font_description)
+        attrs.insert(attr)
         self.set_attributes(attrs)
+        self.set_xalign(0.0)
+
+        # Determine the width per character in the selected monospace font.
+        label = Gtk.Label()
+        pango_layout = label.get_layout()
+        pango_layout.set_text(ascii_letters, -1)
+        pango_layout.set_font_description(font_description)
+        width, height = pango_layout.get_pixel_size()
+        self.char_width = width / len(ascii_letters)
 
         self.message_queue = queue.Queue()
         self.timer_is_running = False
 
     # Setting ellipsize to Pango.EllipsizeMode.END does not work. The label
-    # gets wider to accommodate a long string and forces the main window to
-    # get wider. Setting a size request does not help as that request sets
-    # a minimum size. Instead, I set maxlen (a maximum length for the
-    # message in characters) and handle the ellipsizing myself.
-    def set_maxlen(self, maxlen):
-        self.maxlen = maxlen
+    # is configured to expand as necessary to fill the space it occupies.
+    # (Surrounding widgets have fixed widths.) Instead, whenever the label
+    # resizes we compute a maximum number of characters to allow and then
+    # ellipsize manually.
+    def do_size_allocate(self, alloc):
+        self.maxlen = int(alloc.width / self.char_width)
+        Gtk.Label.do_size_allocate(self, alloc)
 
     # If multiple messages get queued, only the first expose_cb and the first
     # non-None restore_cb matter. If neither is specified, MessageLabel shows
-    # itself when a message is queued and hides itself when no messages
-    # remain in the queue.
+    # itself when a message is queued and clears itself when no messages
+    # remain in the queue. NB: clear, do not hide, the label. Hiding the
+    # label prevents GTK from resizing it when the main window resizes.
     def queue_message(self, message, expose_cb=None, restore_cb=None):
         # If the message is already displayed, simply restart the timer so
         # that INTERVALs of display do not accumulate.
@@ -62,14 +77,18 @@ class MessageLabel(Gtk.Label):
         try:
             message = self.message_queue.get_nowait()
         except queue.Empty:
-            self.hide()
+            self.set_text('')
             if self.restore_cb is not None:
                 self.restore_cb()
                 self.restore_cb = None
             self.timer_is_running = False
             return False
-        if self.maxlen and len(message) > self.maxlen:
-            message = message[:self.maxlen - 1] + '…'
-        self.set_markup(message)
+
+        # If maxlen is still None then MessageLabel has not been realized
+        # yet, so do not set the message.
+        if self.maxlen is not None:
+            if len(message) > self.maxlen:
+                message = message[:self.maxlen - 1] + '…'
+            self.set_markup(message)
         return True
 

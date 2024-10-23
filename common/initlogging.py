@@ -12,7 +12,7 @@ logger = logging.getLogger('wax')
 formatter = logging.Formatter(
         style='{',
         datefmt='%Y-%m-%d %H:%M:%S',
-        fmt='\n{asctime}')
+        fmt='\n{asctime}\n{message}')
 
 file_handler = handlers.RotatingFileHandler(
         filename=Path(CONFIG_DIR, 'log', 'wax.log'),

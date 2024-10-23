@@ -40,6 +40,7 @@ THUMBNAIL_SIZE = (74, 74)
 METADATA_CLASSES = ('primary', 'secondary')
 
 NOEXPAND = (False, False, 0)
+EXPAND = (True, True, 0)
 
 SND_EXT = ('.wav', '.flac', '.ogg', '.mp3')
 JPG_EXT = ('.jpg', '.jpeg', '.png')

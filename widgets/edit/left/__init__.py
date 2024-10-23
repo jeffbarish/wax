@@ -7,7 +7,7 @@ from gi.repository import Gtk
 from .editnotebook import EditNotebook
 from .savebutton import SaveButton
 from .unicodekbd import UnicodeKbd
-from common.constants import NOEXPAND
+from common.constants import EXPAND, NOEXPAND
 from widgets.messagelabel import MessageLabel
 
 class EditLeft(Gtk.Box):
@@ -17,7 +17,6 @@ class EditLeft(Gtk.Box):
 
         self.edit_message_label = edit_message_label = MessageLabel()
         edit_message_label.set_margin_start(6)
-        edit_message_label.set_maxlen(55)
         edit_message_label.set_name('edit-message-label')
 
         save_button = SaveButton()
@@ -26,7 +25,7 @@ class EditLeft(Gtk.Box):
         hbox = Gtk.Box()
         hbox.set_orientation(Gtk.Orientation.HORIZONTAL)
         hbox.set_spacing(3)
-        hbox.pack_start(edit_message_label, *NOEXPAND)
+        hbox.pack_start(edit_message_label, *EXPAND)
         hbox.pack_end(save_button, *NOEXPAND)
 
         self.pack_end(hbox, False, False, 3)
@@ -36,5 +35,5 @@ class EditLeft(Gtk.Box):
 edit_notebook = EditNotebook()
 
 edit_left = EditLeft()
-edit_left.pack_end(edit_notebook, True, True, 0)
+edit_left.pack_end(edit_notebook, *EXPAND)
 
