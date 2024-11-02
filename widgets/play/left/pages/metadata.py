@@ -178,13 +178,13 @@ class MetadataView(Gtk.Grid):
         self.track_position = track_position
         self.track_duration = track_duration
         self.track_progressbar.set_fraction(track_ratio)
-        self.display_track_time(self.track_position, self.track_duration)
+        self.display_track_time(track_position, track_duration)
 
         self.set_position = set_position
         self.set_duration = set_duration
         set_ratio = set_position / set_duration
         self.set_progressbar.set_fraction(set_ratio)
-        self.display_set_time(self.set_position)
+        self.display_set_time(set_position)
 
     def populate(self, metadata, nonce, uuid):
         model = self.metadata_liststore

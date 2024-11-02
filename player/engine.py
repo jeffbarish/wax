@@ -24,15 +24,11 @@ from gi.repository import GLib
 os.sched_setaffinity(os.getpid(), (3,))
 
 class Track(NamedTuple):
+    uuid: str
     trackid: tuple
-    uri: str
     duration: int
 
 SOUND = Path('recordings', 'sound')
-
-fo = Gio.File.new_for_path(str(Path('data', 'alert.ogg')))
-uri = fo.get_uri()
-ALERT_SOUND_TRACK = Track((-1, -1), uri, 2240907029)
 
 # Decorator to register methods that respond to commands from player.
 command_map = {}
@@ -89,18 +85,56 @@ class PlayEngine:
         self.about_to_finish = False
 
     def on_about_to_finish(self, playbin):
+        # about-to-finish occurs about 1.3s before the end of the track.
         self.about_to_finish = True
         try:
-            self.next_track = next_track = self.pop_track()
+            next_track = self.pop_track()
         except (IndexError, ValueError):
-            self.next_track = None
-            return
-        self.playbin.set_property('uri', next_track.uri)
+            next_track = None
+
+        self.set_uri_for_track(next_track)
 
     def pop_track(self):
         pop_index = 0 if not self.random \
                 else random.randrange(0, len(self.tracks))
         return self.tracks.pop(pop_index)
+
+    def set_uri_for_track(self, track):
+        if track is None:
+            self.next_track = None
+            return
+
+        try:
+            file_name = self.best_version(track.uuid, track.trackid)
+        except FileNotFoundError:
+            file_name = str(Path('data', 'alert.ogg'))
+
+            # Flag the track as invalid by setting uuid = -1, but preserve
+            # trackid and duration so that track-started and track-finished
+            # replies can provide information required to update the display.
+            track = track._replace(uuid=-1)
+
+        fo = Gio.File.new_for_path(file_name)
+        self.playbin.set_property('uri', fo.get_uri())
+
+        self.next_track = track
+
+    def best_version(self, uuid, trackid):
+        disc_num, track_num = trackid
+
+        # Exclude *.part files from glob.
+        paths = Path(SOUND, uuid, str(disc_num)).glob(f'{track_num:02d}.*')
+        paths = [str(p) for p in paths if p.suffix != '.part']
+
+        # Choose the highest quality sound file available.
+        codecs = ['wav', 'flac', 'ogg', 'm4a', 'mp3']
+        paths = sorted(paths,
+                key=lambda p: codecs.index(p.rsplit('.', 1)[1]))
+
+        if not paths:
+            raise FileNotFoundError
+
+        return paths[0]
 
     # The progress timer runs continuously as long as there are tracks to
     # play except when seeking.
@@ -126,12 +160,14 @@ class PlayEngine:
             self.timer_id = None
 
     def send_position(self, track_position):
-        # Do not send position if the alert sound is playing.
-        if self.track.trackid == (-1, -1):
-            return
-
+        if self.track.uuid != -1:
+            track_position = min(track_position, self.track.duration)
+        else:
+            # We are not interested in displaying progress through the
+            # alert sound, so force track position to 0.
+            track_position = 0
         set_position = self.segment_start + track_position
-        track_position = min(track_position, self.track.duration)
+
         self.send_reply('position', *self._convert_to_secs(
                 track_position, self.track.duration,
                 set_position, self.set_duration))
@@ -144,7 +180,7 @@ class PlayEngine:
         self.track = self.next_track
         self.send_reply('track-started',
                 *self._convert_to_secs(self.track.duration),
-                self.more_tracks, *self.track.trackid)
+                bool(self.tracks), *self.track.trackid)
 
         self.about_to_finish = False
 
@@ -168,27 +204,6 @@ class PlayEngine:
         text = json.dumps(message)
         print(text, flush=True)
 
-    def best_version(self, uuid, trackid):
-        disc_num, track_num = trackid
-
-        # Exclude *.part files from glob.
-        paths = Path(SOUND, uuid, str(disc_num)).glob(f'{track_num:02d}.*')
-        paths = [str(p) for p in paths if not str(p).endswith('part')]
-
-        # Choose the highest quality sound file available.
-        codecs = ['wav', 'flac', 'ogg', 'm4a', 'mp3']
-        paths = sorted(paths,
-                key=lambda p: codecs.index(p.rsplit('.', 1)[1]))
-
-        if not paths:
-            raise FileNotFoundError
-
-        return paths[0]
-
-    @property
-    def more_tracks(self):
-        return len(self.tracks) > 0
-
     # -Command handlers--------------------------------------------------------
     def on_command_in(self, source, result):
         line, length = source.read_line_finish_utf8(result)
@@ -202,30 +217,18 @@ class PlayEngine:
 
     @command
     def on_append_queue(self, uuid, trackid, duration):
-        try:
-            file_name = self.best_version(uuid, trackid)
-        except FileNotFoundError:
-            # Append alert sound only once, not once for each missing track.
-            if not len(self.tracks):
-                self.tracks.append(ALERT_SOUND_TRACK)
-        else:
-            fo = Gio.File.new_for_path(file_name)
-            uri = fo.get_uri()
-            self.tracks.append(Track(trackid, uri, duration))
+        self.tracks.append(Track(uuid, trackid, duration))
 
     @command
     def on_ready_play(self):
-        if self.tracks[0] == ALERT_SOUND_TRACK:
-            set_duration = (0,)
-        else:
-            self.set_duration = sum(map(attrgetter('duration'), self.tracks))
-            set_duration = self._convert_to_secs(self.set_duration)
+        self.set_duration = sum(map(attrgetter('duration'), self.tracks))
+        set_duration = self._convert_to_secs(self.set_duration)
         self.send_reply('set-ready', *set_duration)
 
         self.track = self.pop_track()
         self.send_reply('track-started',
                 *self._convert_to_secs(self.track.duration),
-                self.more_tracks, *self.track.trackid)
+                bool(self.tracks), *self.track.trackid)
 
     @command
     def on_random(self, state):
@@ -236,7 +239,7 @@ class PlayEngine:
 
         if state and self.get_state() != Gst.State.PLAYING:
             # Restore self.track to self.tracks and then redo on_ready_play.
-            # with self.random set, the self.pop_track will make a random
+            # With self.random set, the self.pop_track will make a random
             # selection for the first track to play (and for subsequent
             # tracks).
             self.tracks.insert(0, self.track)
@@ -245,7 +248,7 @@ class PlayEngine:
     @command
     def on_play(self):
         if self.get_state() == Gst.State.NULL:
-            self.playbin.set_property('uri', self.track.uri)
+            self.set_uri_for_track(self.track)
         self.set_state('PLAYING')
         self.start_progress_timer()
 
@@ -258,12 +261,13 @@ class PlayEngine:
         self.send_reply('track-finished', len(self.tracks),
                 *self.track.trackid)
 
+        self.about_to_finish = True
         self.segment_start += self.track.duration
         self.track = track = self.pop_track()
-        self.playbin.set_property('uri', track.uri)
+        self.set_uri_for_track(track)
         self.send_reply('track-started',
                 *self._convert_to_secs(track.duration),
-                self.more_tracks, *track.trackid)
+                bool(self.tracks), *track.trackid)
 
         if init_playbin_state == Gst.State.PLAYING:
             self.set_state('PLAYING')
@@ -316,7 +320,7 @@ class PlayEngine:
             case Gst.State.NULL:
                 # If we have not started playing yet, go into PLAYING long
                 # enough to set the position and then pause.
-                self.playbin.set_property('uri', self.track.uri)
+                self.set_uri_for_track(self.track)
                 self.set_state('PLAYING')
                 self.get_state()  # this statement is necessary
                 self._do_seek(ratio)
