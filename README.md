@@ -12,6 +12,8 @@ The manual is available at [readthedocs](https://wax-manual.readthedocs.io/en/la
 
 For an overview of Wax, read the blog post at [Archimago](https://archimago.blogspot.com/2024/10/guest-post-raspberry-pi-music-system.html).
 
+There is also a thread about Wax at MusicBrainz [Forum](https://community.metabrainz.org/t/using-wax-for-cataloging-and-playing-a-music-collection/687954).
+
 ## Author
 
 * **Jeffrey Barish**
