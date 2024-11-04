@@ -8,7 +8,7 @@ Use the installer program to install Wax and its companion program WaxConfig. Se
 
 ## Getting Started
 
-The manual is available at [readthedocs](https://wax-manual.readthedocs.io/en/latest/introduction.html)
+The manual is available at [readthedocs](https://wax-manual.readthedocs.io/en/latest/introduction.html).
 
 For an overview of Wax, read the blog post at [Archimago](https://archimago.blogspot.com/2024/10/guest-post-raspberry-pi-music-system.html).
 
