@@ -51,8 +51,6 @@ class ImportFiles(Gtk.Paned):
 
         register_connect_request('tags-metadata', 'import-finished',
                 self.on_import_finished)
-        register_connect_request('selector.recording_selection', 'changed',
-                self.on_recording_selection_changed)
 
     def on_options_edit_delete_activate(self, menuitem):
         doublebutton.config(0, True, False)
@@ -74,18 +72,6 @@ class ImportFiles(Gtk.Paned):
 
     def on_import_finished(self, rawmetadata):
         doublebutton.config(1, True, True)
-
-    def on_recording_selection_changed(self, selection):
-        # See whether a soundfile is already selected.
-        file_chooser = getattr_from_obj_with_name('file-chooser')
-        file_chooser_treeselection = file_chooser.file_chooser_treeselection
-        model, treepaths = file_chooser_treeselection.get_selected_rows()
-        snd_selected = any(Path(model[tp][0]).suffix in SND_EXT
-                for tp in treepaths)
-
-        model, treeiter = selection.get_selected()
-        recording_selected = treeiter is not None
-        doublebutton.config(recording_selected, snd_selected, False)
 
     # -Utility methods---------------------------------------------------------
     def import_(self, uuid):

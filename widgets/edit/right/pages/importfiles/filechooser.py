@@ -13,6 +13,7 @@ from mutagen import MutagenError
 
 from . import doublebutton
 from common.connector import getattr_from_obj_with_name
+from common.connector import register_connect_request
 from common.constants import TRANSFER
 from common.constants import SND_EXT, JPG_EXT, PDF_EXT
 from common.contextmanagers import signal_blocker
@@ -84,8 +85,11 @@ class FileChooser(Gtk.Box):
         ripper.connect('rip-finished', self.on_rip_finished)
         ripper.connect('rip-aborted', self.on_rip_finished)
 
+        register_connect_request('selector.recording_selection', 'changed',
+                self.on_recording_selection_changed)
+
     def on_rip_started(self, ripper, uuid, disc_num):
-        doublebutton.config(1, self.snd_is_selected(), False)
+        self.config_doublebutton()
 
     def on_rip_finished(self, ripper):
         model, treepaths = self.file_chooser_treeselection.get_selected_rows()
@@ -96,8 +100,7 @@ class FileChooser(Gtk.Box):
             if any(suffix in val for suffix in suffixes):
                 label_l.append(key)
 
-        sensitive = self.snd_is_selected()
-        doublebutton.config(None, sensitive, sensitive)
+        self.config_doublebutton()
 
     def on_options_edit_clear_activate(self, menuitem):
         # Left button should be insensitive until a sound file is selected.
@@ -288,31 +291,39 @@ class FileChooser(Gtk.Box):
         label = ', '.join(label_l)
         self.file_chooser_types_label.set_text(label)
 
-        for suffix in ('doc', 'image'):
-            names = []
-            for tp in treepaths:
-                filename = Path(model[tp][0])
-                if filename.suffix in suffix_map[suffix]:
-                    names.append(str(Path(*self.current_dir, filename)))
-            setattr(self, f'_{suffix}_filenames', names)
+        self.config_doublebutton()
 
-        # The label can be either Import or Add if a sound file is
-        # selected. Otherwise, it must be Add.
-        label = None if self.snd_is_selected() else 1
+    def on_recording_selection_changed(self, selection):
+        self.config_doublebutton()
 
-        # Sensitizing the right button makes it possible to select Import,
-        # but Import is permissible only if a sound file is selected and
-        # no rip is underway.
-        right_sensitive = self.snd_is_selected() and not ripper.is_ripping
-
-        # Left is sensitive if something is selected.
-        left_sensitive = bool(treepaths)
-
-        doublebutton.config(label, left_sensitive, right_sensitive)
-
-    def snd_is_selected(self):
+    def config_doublebutton(self):
         model, treepaths = self.file_chooser_treeselection.get_selected_rows()
-        return any(Path(model[tp][0]).suffix in SND_EXT for tp in treepaths)
+        filechooser_has_selection = bool(treepaths)
+        filechooser_has_snd = \
+                any(Path(model[tp][0]).suffix in SND_EXT for tp in treepaths)
+        recording_is_selected = self.recording_is_selected()
+        is_ripping = ripper.is_ripping
+        not_ripping = not is_ripping
+
+        label_add = filechooser_has_selection and (
+                    not_ripping and recording_is_selected
+                or
+                    is_ripping and not filechooser_has_snd)
+        label_create = not label_add
+
+        left_sensitive = label_add \
+                or not_ripping and filechooser_has_snd
+
+        right_sensitive = not_ripping \
+                and (label_create and recording_is_selected \
+                    or label_add and filechooser_has_snd)
+
+        doublebutton.config(label_add, left_sensitive, right_sensitive)
+
+    def recording_is_selected(self):
+        selection = getattr_from_obj_with_name('selector.recording_selection')
+        model, treeiter = selection.get_selected()
+        return treeiter is not None
 
     def populate_file_chooser(self):
         with stop_emission(self.file_chooser_treeselection, 'changed'):
