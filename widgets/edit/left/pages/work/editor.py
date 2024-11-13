@@ -429,8 +429,6 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
                         if ratio > 90:
                             yield (artist, line, ratio)
 
-        start_time = time()
-
         # Look for perfect matches first.
         matches = defaultdict(list)
         def perfect_match(text1, text2):
@@ -532,9 +530,6 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         for key, value in current_metadata.items():
             val = next(zip(*value))
             nonce_kv_list.append((key, [val]))
-
-        elapsed_time = time() - start_time
-        print(f'map_metadata took {elapsed_time * 1000.0:.2f}ms')
 
         self.populate(self.edit_genre,
                 primary=primary_kv_list,

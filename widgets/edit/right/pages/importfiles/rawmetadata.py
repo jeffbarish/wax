@@ -13,12 +13,12 @@ from gi.repository import Gtk, GObject
 
 from mutagen.id3 import PictureType
 
-from . import importer
 from .tagextractors import extract
 from common.constants import TRANSFER
 from common.decorators import idle_add
 from common.types import TrackTuple
 from common.utilities import debug
+from ripper import ripper
 from widgets import options_button
 
 REJECT_TAGS = ('bitrate', 'codec', 'bits_per_sample', 'sample_rate', 'discid',
@@ -168,7 +168,7 @@ class RawMetadata(Gtk.ScrolledWindow):
         if sb is not None:
             sb.set_value(self.props.vadjustment.props.upper)
 
-    def import_selected_files(self, uuid, file_dir, file_names):
+    def import_selected_files(self, file_dir, file_names):
         docs = set()
         tracks = []
         tags = {}
@@ -176,7 +176,7 @@ class RawMetadata(Gtk.ScrolledWindow):
         tracknumbers = defaultdict(set)
         images_set = set()
 
-        self.emit('import-started', uuid, 0)
+        self.emit('import-started', ripper.uuid, ripper.disc_num)
         for track_num, file_name in enumerate(file_names):
             root, ext = os.path.splitext(file_name)
             match ext:
@@ -191,7 +191,7 @@ class RawMetadata(Gtk.ScrolledWindow):
                     docs.add(doc_file_name)
                     continue
 
-            i_track = importer.import_track(uuid, file_dir, file_name)
+            i_track = ripper.import_track(file_dir, file_name)
 
             try:
                 tags = self.extract_tags(file_dir, file_name)
@@ -274,7 +274,7 @@ class RawMetadata(Gtk.ScrolledWindow):
 
         # Reorder the tracks if the specification in the tags is valid:
         # The set of discnums must be complete (only one value (which will
-        # be -2 if all tracks lack a discnumber tag) or no missing tags and
+        # be -2 if all tracks lack a discnumber tag)) or no missing tags and
         # no duplicates) and the set of tracknums for each discnum must be
         # complete.
         get_tracknum = itemgetter(0)

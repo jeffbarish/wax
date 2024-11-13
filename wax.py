@@ -21,7 +21,6 @@ from player import player
 from ripper import ripper
 from widgets import top_widget
 from widgets import control_panel
-from widgets.edit.right.pages.importfiles import importer
 
 # Make pickle happy:
 from common.types import RecordingTuple, WorkTuple, TrackTuple
@@ -49,7 +48,7 @@ class Wax(Gtk.Window):
 
         self.add(top_widget)
 
-        traverse_widgets([self, control_panel, player, ripper, importer,
+        traverse_widgets([self, control_panel, player, ripper,
                 cd_drive_watcher])
         connect_signals()
 

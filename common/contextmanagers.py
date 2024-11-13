@@ -50,3 +50,12 @@ def signal_blocker(gtk_object, signal):
     yield
     GObject.signal_handler_unblock(gtk_object, handler_id)
 
+# Time a block of code.
+@contextmanager
+def timer(message):
+    from time import time
+    start_time = time()
+    yield
+    elapsed_time = time() - start_time
+    print(f'{message} {elapsed_time * 1000.0:.2f}ms')
+

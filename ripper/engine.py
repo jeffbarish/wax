@@ -120,8 +120,8 @@ class Ripper:
             self.cd_src.set_property('track', next_track)
             self.pipeline.set_state(Gst.State.PLAYING)
         else:
-            self.send_reply('rip-finished')
             self.send_reply('state', 'NULL')
+            self.send_reply('rip-finished')
 
     def on_error(self, bus, msg):
         self.pipeline.set_state(Gst.State.NULL)

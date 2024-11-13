@@ -63,7 +63,7 @@ class FilesEditor(Gtk.Box):
                 self.on_rip_aborted)
         register_connect_request('tags-metadata', 'import-started',
                 self.on_import_started)
-        register_connect_request('importer', 'import-track-finished',
+        register_connect_request('ripper', 'import-track-finished',
                 self.on_import_track_finished)
         register_connect_request('edit-left-notebook', 'recording-saved',
                 self.on_recording_saved)
@@ -122,10 +122,13 @@ class FilesEditor(Gtk.Box):
             self.refresh_trackslist(ripper.uuid, ripper.disc_num)
         else:
             # We just aborted the initial rip of the non-first disc, so
-            # hide the trackslistbox for disc_num (the last trackslistbox).
+            # hide the trackslistbox for disc_num.
             children = self.edit_files_tracks_list_box.get_children()
-            trackslistbox = children[-1]
-            trackslistbox.hide()
+            for child in reversed(children):
+                if child.disc_num == ripper.disc_num:
+                    child.files_list_liststore.clear()
+                    child.hide()
+                    break
             FilesListTreeView.update_total_size()
 
     # -Import handlers---------------------------------------------------------

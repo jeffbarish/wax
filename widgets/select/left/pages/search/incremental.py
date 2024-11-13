@@ -287,15 +287,12 @@ class SearchIncremental(Gtk.Box):
         self.hide_images()
 
         # Create a dict of recordings that match the search string.
-        start_time = time()
         first_match = {}
         for uuid, work_num, values in self.yield_matches(text):
             first_match[(uuid, work_num)] = values
             if len(first_match) > N_MATCHES_MAX:
                 self.show_incremental_overflow_image(True)
                 return '', {}
-        elapsed_time = time() - start_time
-        print(f'creating first_match took {elapsed_time * 1000.0:.2f}ms')
 
         self.show_incremental_overflow_image(False)
         self.create_images(first_match)

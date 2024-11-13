@@ -88,20 +88,6 @@ class FileChooser(Gtk.Box):
         register_connect_request('selector.recording_selection', 'changed',
                 self.on_recording_selection_changed)
 
-    def on_rip_started(self, ripper, uuid, disc_num):
-        self.config_doublebutton()
-
-    def on_rip_finished(self, ripper):
-        model, treepaths = self.file_chooser_treeselection.get_selected_rows()
-        suffix_map = {'sound': SND_EXT, 'image': JPG_EXT, 'doc': PDF_EXT}
-        suffixes = [Path(model[tp][0]).suffix for tp in treepaths]
-        label_l = []
-        for key, val in suffix_map.items():
-            if any(suffix in val for suffix in suffixes):
-                label_l.append(key)
-
-        self.config_doublebutton()
-
     def on_options_edit_clear_activate(self, menuitem):
         # Left button should be insensitive until a sound file is selected.
         self.file_chooser_treeselection.unselect_all()
@@ -293,6 +279,12 @@ class FileChooser(Gtk.Box):
 
         self.config_doublebutton()
 
+    def on_rip_started(self, ripper, uuid, disc_num):
+        self.config_doublebutton()
+
+    def on_rip_finished(self, ripper):
+        self.config_doublebutton()
+
     def on_recording_selection_changed(self, selection):
         self.config_doublebutton()
 
@@ -301,29 +293,22 @@ class FileChooser(Gtk.Box):
         filechooser_has_selection = bool(treepaths)
         filechooser_has_snd = \
                 any(Path(model[tp][0]).suffix in SND_EXT for tp in treepaths)
-        recording_is_selected = self.recording_is_selected()
         is_ripping = ripper.is_ripping
-        not_ripping = not is_ripping
 
-        label_add = filechooser_has_selection and (
-                    not_ripping and recording_is_selected
-                or
-                    is_ripping and not filechooser_has_snd)
-        label_create = not label_add
+        track_treestore = getattr_from_obj_with_name(
+                'edit-tracks-page.track_treestore')
+        recording_has_snd = bool(len(track_treestore))
 
-        left_sensitive = label_add \
-                or not_ripping and filechooser_has_snd
+        label_add = is_ripping or recording_has_snd
 
-        right_sensitive = not_ripping \
-                and (label_create and recording_is_selected \
-                    or label_add and filechooser_has_snd)
+        left_sensitive = not is_ripping and filechooser_has_snd \
+                or label_add and filechooser_has_selection \
+                    and not filechooser_has_snd
+
+        right_sensitive = not is_ripping \
+                and recording_has_snd and filechooser_has_snd
 
         doublebutton.config(label_add, left_sensitive, right_sensitive)
-
-    def recording_is_selected(self):
-        selection = getattr_from_obj_with_name('selector.recording_selection')
-        model, treeiter = selection.get_selected()
-        return treeiter is not None
 
     def populate_file_chooser(self):
         with stop_emission(self.file_chooser_treeselection, 'changed'):

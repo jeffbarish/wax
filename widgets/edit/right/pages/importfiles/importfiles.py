@@ -1,5 +1,7 @@
 """Controls for importing files."""
 
+import hashlib
+import os
 from pathlib import Path
 
 import gi
@@ -12,7 +14,7 @@ from .rawmetadata import RawMetadata
 from common.config import config
 from common.connector import getattr_from_obj_with_name
 from common.connector import register_connect_request
-from common.constants import NOEXPAND, SND_EXT
+from common.constants import NOEXPAND, SND_EXT, TRANSFER
 from common.utilities import debug
 from ripper import ripper
 from widgets import options_button
@@ -60,24 +62,24 @@ class ImportFiles(Gtk.Paned):
         match label:
             case 'Create':
                 self.emit('import-create-clicked')
-                uuid = edit.make_uuid()
 
-                # Prepare ripper with the uuid in case the next operation is
-                # Add.
-                ripper.init_disc(uuid, ['0'])
-
-                self.import_(uuid)
+                self.import_()
             case 'Add':
-                GLib.idle_add(self.add, edit.uuid)
+                self.add()
 
     def on_import_finished(self, rawmetadata):
         doublebutton.config(1, True, True)
 
     # -Utility methods---------------------------------------------------------
-    def import_(self, uuid):
+    def import_(self):
         file_dir, filenames = file_chooser.get_selected_files()
-        all_data = raw_metadata.import_selected_files(uuid, file_dir,
-                filenames)
+
+        snd_filenames = [f for f in filenames if Path(f).suffix in SND_EXT]
+        if snd_filenames:
+            disc_id = self.make_disc_id(file_dir, snd_filenames)
+            ripper.prepare_import(disc_id)
+
+        all_data = raw_metadata.import_selected_files(file_dir, filenames)
         metadata, tracks, props_rec, props_wrk, images, docs = all_data
 
         if metadata:
@@ -104,12 +106,17 @@ class ImportFiles(Gtk.Paned):
 
         file_chooser.unselect_all()
 
-    def add(self, uuid):
+    def add(self):
         raw_metadata.clear()
 
         file_dir, filenames = file_chooser.get_selected_files()
-        all_data = raw_metadata.import_selected_files(uuid, file_dir,
-                filenames)
+
+        snd_filenames = [f for f in filenames if Path(f).suffix in SND_EXT]
+        if snd_filenames:
+            disc_id = self.make_disc_id(file_dir, snd_filenames)
+            ripper.add_import(disc_id)
+
+        all_data = raw_metadata.import_selected_files(file_dir, filenames)
         _, tracks, _, _, images, docs = all_data
 
         if tracks:
@@ -124,3 +131,16 @@ class ImportFiles(Gtk.Paned):
             docs_editor = getattr_from_obj_with_name('edit-docs-page')
             docs_editor.add_docs(docs)
 
+    # Use the hash of all files in filenames as the disc_id for the import.
+    # If the user adds a set of files previously imported, ripper will
+    # consider the operation a "rerip".
+    def make_disc_id(self, file_dir, filenames):
+        hash_func = hashlib.new('sha256')
+
+        for filename in filenames:
+            filepath = os.path.join(TRANSFER, file_dir, filename)
+            with open(filepath, 'rb') as fo:
+                while data := fo.read(8192):
+                    hash_func.update(data)
+
+        return hash_func.hexdigest()

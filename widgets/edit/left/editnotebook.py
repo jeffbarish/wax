@@ -145,19 +145,6 @@ class EditNotebook(Gtk.Notebook):
         self.action = Action.IMPORT
 
     def on_import_started(self, importer, uuid, disc_num):
-        # Setting sensitive to True in the handler for import-create-clicked
-        # does not work if it is necessary to abort a rip as the handler for
-        # rip-aborted (which occurs after import-create-clicked) sets sensitive
-        # to False. import-started occurs later because it is produced as
-        # a consequence of the following sequence of events:
-        # ripper responds to import-create-clicked by telling engine to stop
-        # ripping. ripper also emits rip-aborted immediately (without waiting
-        # for engine to actually finish aborting). importfiles runs import_
-        # from the idle loop so that all handlers for import-create-clicked
-        # (and the handlers for rip-aborted which it triggers) run first.
-        # import_ runs raw_metadata.import_selected_files which runs
-        # importer.import_track. import_track emits import-started, so this
-        # handler runs well after import-create-clicked.
         self.set_sensitive(True)
 
     def on_options_edit_clear_activate(self, menuitem):
@@ -231,8 +218,8 @@ class EditNotebook(Gtk.Notebook):
                 # we need to delete *all* works that were saved, regardless
                 # of genre. selector.on_recording_deleted deletes all
                 # the works for uuid in the current select genre.
-                self.delete_short_metadata(edit.uuid)
-                self.delete_long_metadata(edit.uuid)
+                self.delete_short_metadata(ripper.uuid)
+                self.delete_long_metadata(ripper.uuid)
 
                 self.revise_mode = False
 
@@ -340,20 +327,16 @@ class EditNotebook(Gtk.Notebook):
             track_ids=trackids_playable,
             trackgroups=trackgroups)
 
-        # If I am revising a recording made from imported tracks, then
-        # disc_ids is irrelevant. However, ripper.disc_ids got set to
-        # ['0'] in populate_forms_from_selection, so that value gets
-        # propagated here.
         if self.revise_mode:
             match label:
                 case 'Save revision':
                     old_work = self.recording.works[self.work_num]
                     if edit_genre != old_work.genre:
                         self.delete_short_metadata_for_work(old_work.genre,
-                                edit.uuid, self.work_num)
+                                ripper.uuid, self.work_num)
                     self.recording = self.save_revision(new_work,
                             self.recording.works, tracks, props_rec,
-                            list(ripper.disc_ids), self.work_num)
+                            list(ripper.disc_ids), ripper.uuid, self.work_num)
                 case 'Save new':
                     self.work_num = max(self.recording.works) + 1
                     self.recording = self.recording._replace(tracks=tracks)
@@ -362,29 +345,31 @@ class EditNotebook(Gtk.Notebook):
             match self.action:
                 case Action.READCD:
                     self.recording = self.create_new_recording(new_work,
-                            tracks, props_rec, list(ripper.disc_ids))
+                            tracks, props_rec, list(ripper.disc_ids),
+                            ripper.uuid)
                     self.work_num = 0
                 case Action.IMPORT:
                     self.recording = self.create_new_recording(new_work,
-                            tracks, props_rec, ['0'])
+                            tracks, props_rec, list(ripper.disc_ids),
+                            ripper.uuid)
                     self.work_num = 0
 
             self._revise_mode = True
 
         self.write_long_metadata(self.recording)
         self.write_short_metadata(work_short, edit_genre,
-                edit.uuid, self.work_num)
+                ripper.uuid, self.work_num)
 
         # Get edit-images-page to write the current images to files.
         images_editor = self.pages['images'].page_widget
-        images_editor.write_images(edit.uuid)
+        images_editor.write_images(ripper.uuid)
 
         if self.action == Action.READCD:
-            images_editor.tag_cover_art(edit.uuid)
+            images_editor.tag_cover_art(ripper.uuid)
 
         # Get edit-docs-page to write the current docs to files.
         docs_editor = self.pages['docs'].page_widget
-        docs_editor.write_docs(edit.uuid)
+        docs_editor.write_docs(ripper.uuid)
 
         files_editor = self.pages['files'].page_widget
         files_editor.populate(self.recording.uuid, new_work.track_ids)
@@ -441,14 +426,13 @@ class EditNotebook(Gtk.Notebook):
 
             model = model_filter.props.child_model
             self.recording = recording = model.recording
-            edit.set_uuid(recording.uuid)
             self.work_num = model.work_num
             metadata = model.metadata
             work = model.work
 
             # If no edit is underway, set ripper.uuid to the selected
             # recording in case the user clicks Add to rerip the tracks.
-            ripper.init_disc(recording.uuid, recording.discids)
+            ripper.restore(recording.uuid, recording.discids)
 
             # Unlike play mode, edit mode handles each category of
             # metadata differently, so separate primary and secondary here.
@@ -488,16 +472,16 @@ class EditNotebook(Gtk.Notebook):
 
             options_button.sensitize_menuitem('Edit', 'Delete', True)
 
-    def create_new_recording(self, new_work, tracks, props, disc_ids):
+    def create_new_recording(self, new_work, tracks, props, disc_ids, uuid):
         works = {0: new_work}
 
-        return RecordingTuple(works, tracks, props, disc_ids, edit.uuid)
+        return RecordingTuple(works, tracks, props, disc_ids, uuid)
 
     def save_revision(self, new_work, works, tracks, props,
-                disc_ids, work_num):
+                disc_ids, uuid, work_num):
         works[work_num] = new_work
 
-        return RecordingTuple(works, tracks, props, disc_ids, edit.uuid)
+        return RecordingTuple(works, tracks, props, disc_ids, uuid)
 
     def update_work_props(self, uuid, work_num, props):
         if self.revise_mode \
@@ -746,15 +730,15 @@ class EditNotebook(Gtk.Notebook):
                 del recording_shelf[uuid]
 
     def delete_sound(self):
-        sound_path = Path(SOUND, edit.uuid)
+        sound_path = Path(SOUND, ripper.uuid)
         shutil.rmtree(sound_path, ignore_errors=True)
 
     def delete_notes(self):
-        documents_path = Path(DOCUMENTS, edit.uuid)
+        documents_path = Path(DOCUMENTS, ripper.uuid)
         shutil.rmtree(documents_path, ignore_errors=True)
 
     def delete_images(self):
-        images_path = Path(IMAGES, edit.uuid)
+        images_path = Path(IMAGES, ripper.uuid)
         shutil.rmtree(images_path, ignore_errors=True)
 
 

@@ -83,8 +83,6 @@ class RipCD(Gtk.Box):
         ripper.connect('rip-finished', self.on_rip_finished)
         ripper.connect('rip-error', self.on_rip_error)
 
-        register_connect_request('edit-importfiles', 'import-create-clicked',
-                self.on_import_create_clicked)
         register_connect_request('tags-metadata', 'import-finished',
                 self.on_import_finished)
         register_connect_request('selector.recording_selection', 'changed',
@@ -126,12 +124,8 @@ class RipCD(Gtk.Box):
         disc_ready = cd_drive_watcher.disc_ready
         doublebutton.config(0, disc_ready, False)
 
-    def on_import_create_clicked(self, importfiles):
-        self.doublebutton_sens = doublebutton.get_sensitive()
-        doublebutton.config(1, False, False)
-
     def on_import_finished(self, rawmetadata):
-        doublebutton.config(None, *self.doublebutton_sens)
+        doublebutton.config(1, True, True)
 
     # -Button signal handlers--------------------------------------------------
     def on_doublebutton_clicked(self, button, label):
@@ -140,8 +134,8 @@ class RipCD(Gtk.Box):
                 # I emit rip-create-clicked. It goes to work.editor, images,
                 # properties, editnotebook, and importfiles.
                 self.emit('rip-create-clicked')
-                uuid = edit.make_uuid()
-                self.create(uuid)
+
+                self.create()
             case 'Add':
                 self.add_cd()
 
@@ -294,7 +288,7 @@ class RipCD(Gtk.Box):
     # cb for the call in add_cd.
     def read_sectors_tracks_cb(self, success, sectors):
         self.sectors = sectors
-        if success and not self.rerip:
+        if success and not ripper.rerip:
             self.raw_metadata.clear()
             self.read_cd(self.track_extract_cb)
 
@@ -388,7 +382,7 @@ class RipCD(Gtk.Box):
             yield TrackTuple(disc_num, i, title, duration)
 
     # -Utility methods---------------------------------------------------------
-    def create(self, uuid):
+    def create(self):
         doublebutton.hide()
         self.abort_button.set_sensitive(True)
         self.raw_metadata.clear()
@@ -407,7 +401,7 @@ class RipCD(Gtk.Box):
 
         # rip_disc creates SOUND, IMAGES, DOCUMENTS. (Likewise, importer
         # creates those directories during an import operation.)
-        ripper.rip_disc(uuid, cd_drive_watcher.disc_id)
+        ripper.rip_disc(cd_drive_watcher.disc_id)
 
     def add_cd(self):
         doublebutton.hide()
@@ -423,7 +417,7 @@ class RipCD(Gtk.Box):
 
         self.read_sectors(self.read_sectors_tracks_cb)
 
-        self.rerip = ripper.add_disc(cd_drive_watcher.disc_id)
+        ripper.add_disc(cd_drive_watcher.disc_id)
 
     def _initialize_controls(self):
         self.ripcd_right_stack.set_visible_child_name('create')

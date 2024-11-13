@@ -1,10 +1,11 @@
-"""Ripper is the interface to the rest of the program for rip functionality."""
-
-# Consider proxy object
-# (https://docs.python.org/3/library/multiprocessing.html#proxy-objects)
+"""Ripper is the interface to the rest of the program for ripping and
+importing. It supports mixing of rips and imports by centralizing
+maintenance of state variables including uuid, discids, and disc_num.
+It also does zombie protection."""
 
 import atexit
 import shutil
+import time
 from pathlib import Path
 
 import gi
@@ -13,22 +14,14 @@ from gi.repository import GObject
 from mutagen.flac import FLAC
 
 from common.connector import register_connect_request
-from common.constants import IMAGES, DOCUMENTS, SOUND
+from common.constants import IMAGES, DOCUMENTS, SOUND, TRANSFER
 from common.enginelauncher import EngineLauncher
 from common.utilities import debug
 from widgets import options_button
 
-# Decorator to register methods that respond to replies from engine.
 reply_map = {}
-# This version of the decorator provides tracing information.
-# def reply(f):
-#     reply = f.__name__[3:].replace('_', '-')
-#     def new_f(self, *args):
-#         if reply != 'rip-track-position':
-#             print('ripper: received reply', reply, args)
-#         return f(self, *args)
-#     reply_map[reply] = new_f
-#     return new_f
+
+# Decorator to register methods that respond to replies from engine.
 def reply(f):
     reply = f.__name__.removeprefix('on_').replace('_', '-')
     reply_map[reply] = f
@@ -63,6 +56,10 @@ class Ripper(GObject.Object):
 
     @GObject.Signal
     def rip_error(self, message: str):
+        pass
+
+    @GObject.Signal
+    def import_track_finished(self, uuid: str, disc_num: int, track_num: int):
         pass
 
     def __init__(self):
@@ -137,10 +134,14 @@ class Ripper(GObject.Object):
     def on_options_edit_delete_activate(self, menuitem):
         self.do('stop')
 
-    # -------------------------------------------------------------------------
-    # init_disc gets called in editnotebook when populating edit mode with
-    # an existing recording. It prepares ripper to do a rerip or add_disc.
-    def init_disc(self, uuid, disc_ids):
+    # -Generic-----------------------------------------------------------------
+    def make_uuid(self):
+        self.rm_zombie()
+
+        self.uuid = f'{time.time_ns():019d}'
+        return self.uuid
+
+    def restore(self, uuid, disc_ids):
         self.uuid = uuid
         self.disc_ids = list(disc_ids)
         self.saved_disc_ids = list(disc_ids)
@@ -148,17 +149,9 @@ class Ripper(GObject.Object):
         self.disc_num = len(disc_ids) - 1
         self.rerip = False
 
-    def rip_disc(self, uuid, disc_id):
-        # Selecting a recording triggers a call to init_disc, which sets
-        # self.uuid (so it is not None). Clicking Create triggers creation
-        # of a new uuid. ripcd calls this method with the new uuid, so
-        # uuid != self.uuid. Accordingly, we call rm_zombie here. However,
-        # rm_zombie does not remove the self.uuid tree because init_disc
-        # also copied the discids to saved_disc_ids.
-        if uuid != self.uuid:
-            self.rm_zombie()
+    def prepare_create(self, disc_id):
+        self.uuid = uuid = self.make_uuid()
 
-        self.uuid = uuid
         self.disc_id = disc_id
         self.disc_ids = [disc_id]
         self.disc_num = 0
@@ -168,24 +161,63 @@ class Ripper(GObject.Object):
         for parent in (IMAGES, DOCUMENTS, SOUND):
             Path(parent, uuid).mkdir()
 
-        self.do('rip', uuid, 0)
-
-    # It is permissible to add a CD that was already ripped (in which case
-    # we re-rip it). Note that uuid for additional discs is the same as the
-    # one set on the initial rip_disc. Also, init_disc sets the uuid to the
-    # selected recording if no edit is underway in case the user wants to
-    # rerip tracks of or add tracks to an existing recording.
-    def add_disc(self, disc_id):
+    def prepare_add(self, disc_id):
         self.disc_id = disc_id
-        self.rerip = rerip = disc_id in self.disc_ids
-        if not rerip:
+        self.rerip = disc_id in self.disc_ids
+        if not self.rerip:
             self.disc_ids.append(disc_id)
-
         self.disc_num = self.disc_ids.index(disc_id)
+
+    # -Rip---------------------------------------------------------------------
+    # Called from ripcd.create.
+    def rip_disc(self, disc_id):
+        self.prepare_create(disc_id)
+
+        self.do('rip', self.uuid, 0)
+
+    # Called from ripcd.add_cd.
+    def add_disc(self, disc_id):
+        self.prepare_add(disc_id)
+
         self.do('rip', self.uuid, self.disc_num)
 
-        return rerip
+    # -Import------------------------------------------------------------------
+    # Called from importfiles.import_ when filechooser has sound files
+    # selected.
+    def prepare_import(self, disc_id):
+        self.prepare_create(disc_id)
 
+        Path(SOUND, self.uuid, '0').mkdir()
+
+    # Import one track. Called from rawmetadata.import_selected_files.
+    def import_track(self, file_dir, file_name):
+        src_path = Path(TRANSFER, file_dir, file_name)
+
+        dest_dir = Path(SOUND, self.uuid, str(self.disc_num))
+        track_num = len(list(dest_dir.iterdir()))
+
+        dst_path = Path(dest_dir, f'{track_num:02d}{src_path.suffix}')
+
+        shutil.copyfile(src_path, dst_path)
+
+        # Triggers update of display in files.
+        self.emit('import-track-finished', self.uuid, self.disc_num, track_num)
+
+        return track_num
+
+    # Called from importfiles.add when filechooser has sound files selected.
+    def add_import(self, disc_id):
+        self.prepare_add(disc_id)
+
+        # import_track will not overwrite an existing file (it assigns a
+        # track_num one greater than the track_num of the last track in the
+        # directory). Accordingly, we delete the directory and start fresh.
+        if self.rerip:
+            shutil.rmtree(Path(SOUND, self.uuid, str(self.disc_num)))
+
+        Path(SOUND, self.uuid, str(self.disc_num)).mkdir()
+
+    # -Other-------------------------------------------------------------------
     def tag_files(self, tags, tracks):
         disc_dir = Path(SOUND, self.uuid, str(self.disc_num))
         for track_p in disc_dir.glob('*.flac'):
@@ -210,7 +242,9 @@ class Ripper(GObject.Object):
         self.disc_ids = []
 
     def rm_zombie(self):
-        if self.uuid is None:  # happens only on the first rip
+        # rm_zombie gets called at exit. If no tracks were ripped or imported
+        # prior to exit, then self.uuid is still None.
+        if self.uuid is None:
             return
 
         if not self.saved_disc_ids:
