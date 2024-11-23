@@ -376,7 +376,6 @@ class ImagesEditor(Gtk.Box):
             import musicbrainzngs as mb
             image_list = mb.get_image_list(mbid)
             caa_image_urls = [image['image'] for image in image_list['images']]
-            raise Exception('Exception in get_caa_image_urls')
             return (caa_image_urls, disc_num)
 
         # Any click of create_button sets cancellable. If the click occurred

@@ -77,5 +77,5 @@ class CDDriveWatcher(GObject.Object):
         self.disc_id = disc.id
 
 
-cd_drive_watcher = CDDriveWatcher()
+# cd_drive_watcher = CDDriveWatcher()
 

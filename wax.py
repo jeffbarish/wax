@@ -16,7 +16,6 @@ from common.connector import getattr_from_obj_with_name
 from common.utilities import debug
 
 # Top widgets:
-from common.cddrivewatcher import cd_drive_watcher
 from player import player
 from ripper import ripper
 from widgets import top_widget
@@ -48,8 +47,7 @@ class Wax(Gtk.Window):
 
         self.add(top_widget)
 
-        traverse_widgets([self, control_panel, player, ripper,
-                cd_drive_watcher])
+        traverse_widgets([self, control_panel, player, ripper])
         connect_signals()
 
         # Do not initialize the genre selector until we finish configuring
