@@ -8,7 +8,7 @@ from .utilities import debug
 
 # object_dict maps object names to objects in the GUI hierarchy. It scans
 # the hierarchy of objects from top. There can be more than one top (e.g.,
-# wax, control_panel, player, ripper, importer, and cd_drive_watcher).
+# wax, control_panel, player, and ripper).
 object_dict = {}
 def traverse_widgets(tops):
     ignored_names = []
@@ -49,8 +49,7 @@ def register_connect_request(*args):
     _connection_requests.append(args)
 
 def connect_signals():
-    for args in _connection_requests:
-        source, signal, handler = args
+    for source, signal, handler in _connection_requests:
         obj_name, *attr_names = source.split('.')
         try:
             obj = object_dict[obj_name]

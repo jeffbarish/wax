@@ -14,11 +14,11 @@ from common.config import config
 from common.connector import traverse_widgets, connect_signals
 from common.connector import getattr_from_obj_with_name
 from common.utilities import debug
+from widgets import top_widget
 
 # Top widgets:
 from player import player
 from ripper import ripper
-from widgets import top_widget
 from widgets import control_panel
 
 # Make pickle happy:

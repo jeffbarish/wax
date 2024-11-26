@@ -5,7 +5,10 @@ from itertools import groupby
 
 import gi
 gi.require_version('Gtk', '3.0')
-gi.require_version('WebKit2', '4.1')
+try:
+    gi.require_version('WebKit2', '4.1')
+except ValueError:
+    gi.require_version('WebKit2', '4.0')
 from gi.repository import Gtk, WebKit2
 
 from common.connector import register_connect_request

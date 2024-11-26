@@ -23,7 +23,7 @@ STATES = ['VOID_PENDING', 'NULL', 'READY', 'PAUSED', 'PLAYING']
 
 os.sched_setaffinity(os.getpid(), (2,))
 
-# Decorator to register methods that respond to commands from player.
+# Decorator to register methods that respond to commands from ripper.
 command_map = {}
 def command(f):
     command = f.__name__[3:].replace('_', '-')
