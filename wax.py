@@ -63,9 +63,6 @@ class Wax(Gtk.Window):
     def quit(self):
         Gtk.main_quit()
 
-if len(sys.argv) > 1 and sys.argv[1] == '--version':
-    os.system('hg identify --num --rev .')
-else:
-    wax = Wax()
-    Gtk.main()
+wax = Wax()
+Gtk.main()
 

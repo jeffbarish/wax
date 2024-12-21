@@ -2,12 +2,12 @@ from pathlib import Path
 
 CONFIG_DIR = Path('.config')
 QUEUEFILES = Path(CONFIG_DIR, 'queuefiles')
-TRANSFER = Path(CONFIG_DIR, 'transfer')
 
 DATABASE = Path('recordings')
 DOCUMENTS = Path(DATABASE, 'documents')
 IMAGES = Path(DATABASE, 'images')
 SOUND = Path(DATABASE, 'sound')
+TRANSFER = Path(DATABASE, 'transfer')
 
 # Only the folders in METADATA get checkpointed by waxconfig (which is why
 # COMPLETERS is here).

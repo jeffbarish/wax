@@ -207,7 +207,7 @@ class RipCD(Gtk.Box):
             # gets TRACKTOTAL from the TOC, so I do not need n_tracks. Also
             # remove involved_people_list, which might be more information
             # than is usually provided in tags.
-            for key in ('n_tracks', 'involved_people_list'):
+            for key in ('n_tracks', 'involved_people_list', 'asin'):
                 if key in tags:
                     del tags[key]
             ripper.tag_files(tags, self.mbquery.tracks)
