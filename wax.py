@@ -63,6 +63,7 @@ class Wax(Gtk.Window):
     def quit(self):
         Gtk.main_quit()
 
+Gtk.init(None)
 wax = Wax()
 Gtk.main()
 

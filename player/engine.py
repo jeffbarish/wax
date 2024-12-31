@@ -254,33 +254,7 @@ class PlayEngine:
 
     @command
     def on_next_track(self):
-        init_playbin_state = self.get_state()
-
-        # The element must be in state NULL before changing the uri.
-        self.set_state('NULL')
-        self.send_reply('track-finished', len(self.tracks),
-                *self.track.trackid)
-
-        self.about_to_finish = True
-        self.segment_start += self.track.duration
-        self.track = track = self.pop_track()
-        self.set_uri_for_track(track)
-        self.send_reply('track-started',
-                *self._convert_to_secs(track.duration),
-                bool(self.tracks), *track.trackid)
-
-        if init_playbin_state == Gst.State.PLAYING:
-            self.set_state('PLAYING')
-        else:
-            self.send_reply('position', *self._convert_to_secs(
-                    0, track.duration,
-                    self.segment_start, self.set_duration))
-            # Seek triggers a flush event which in turn triggers preroll.
-            # The preroll minimizes the delay that otherwise occurs on the
-            # transition to PLAYING.
-            flag = Gst.SeekFlags.FLUSH
-            self.playbin.seek_simple(Gst.Format.TIME, flag, 0)
-            self.set_state('PAUSED')
+        self._do_seek(1.0)
 
     @command
     def on_pause(self):
@@ -341,7 +315,10 @@ class PlayEngine:
         flag = Gst.SeekFlags.FLUSH
         self.playbin.seek_simple(Gst.Format.TIME, flag, track_position)
 
-        self.send_position(track_position)
+        # If ratio == 1.0 then we are actually advancing to the next track
+        # in response to activation of the next-track button.
+        if ratio < 1.0:
+            self.send_position(track_position)
         self.track_position = track_position
 
         self.start_progress_timer()

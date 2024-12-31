@@ -17,6 +17,7 @@ from common.contextmanagers import signal_blocker
 from common.decorators import emission_stopper
 from common.decorators import idle_add
 from common.types import DragCargo, GroupTuple
+from common.utilities import playable_tracks
 from common.utilities import debug
 from widgets.select.right import playqueue_model
 from widgets import control_panel
@@ -79,8 +80,7 @@ class SearchSibling(Gtk.Box):
     def on_sibling_treeview_drag_data_get(self, treeview, context,
             data, info, time):
         model = getattr_from_obj_with_name('selector.recording_selector.model')
-        tracks = [t for t in model.recording.tracks
-                if t.track_id in model.work.track_ids]
+        tracks = playable_tracks(model.recording.tracks, model.work.track_ids)
         group_map = getattr_from_obj_with_name(
                 'selector.track_selector.model.group_map')
         cargo = DragCargo(model.genre, model.work.metadata, tracks, group_map,
@@ -98,8 +98,7 @@ class SearchSibling(Gtk.Box):
             work = self.recording.works[work_num]
             genre = work.genre
             uuid = self.recording.uuid
-            tracks = [t for t in self.recording.tracks
-                    if t.track_id in work.track_ids]
+            tracks = playable_tracks(self.recording.tracks, work.track_ids)
 
             self.emit('selection-changed', genre, uuid, work_num, tracks)
         GLib.idle_add(finish)
@@ -192,15 +191,14 @@ class SearchSibling(Gtk.Box):
             primary_metadata, = zip(*primary_work_long)
             primary_vals_str = '\n'.join(primary_metadata)
 
-            tracks = [t for t in model.recording.tracks
-                    if t.track_id in work.track_ids]
+            tracks = playable_tracks(model.recording.tracks, work.track_ids)
             group_map = {t: GroupTuple(g_name, g_metadata)
                     for g_name, g_tracks, g_metadata in work.trackgroups
                         for t in g_tracks}
 
             new_queue_row = (thumbnail_pb, (primary_vals_str,),
                     tracks, group_map, work.genre, model.recording.uuid,
-                    work_num, False, model.recording.props, True)
+                    work_num, False, model.recording.props, True, list(tracks))
             playqueue_model.append(new_queue_row)
             return True
 

@@ -16,6 +16,7 @@ from mutagen.id3 import PictureType
 from .tagextractors import extract
 from common.constants import TRANSFER
 from common.decorators import idle_add
+from common.initlogging import logger
 from common.types import TrackTuple
 from common.utilities import debug
 from ripper import ripper
@@ -171,7 +172,6 @@ class RawMetadata(Gtk.ScrolledWindow):
     def import_selected_files(self, file_dir, file_names):
         docs = set()
         tracks = []
-        tags = {}
         worklines = defaultdict(set)
         tracknumbers = defaultdict(set)
         images_set = set()
@@ -240,7 +240,7 @@ class RawMetadata(Gtk.ScrolledWindow):
         try:
             discnum = int(tags.get('discnumber', ['-1'])[0]) - 1
         except ValueError as e:
-            print(f'Error converting discnumber: {e}')
+            logger.error(f'Error converting discnumber: {e}')
             discnum = -1
         try:
             # tracknumber might have the form '1/6' (1 of 6).  If so,
@@ -248,7 +248,7 @@ class RawMetadata(Gtk.ScrolledWindow):
             tracknumber = tags.get('tracknumber', ['-1'])
             tracknum = int(tracknumber[0].split('/')[0]) - 1
         except ValueError as e:
-            print(f'Error converting tracknumber: {e}')
+            logger.error(f'Error converting tracknumber: {e}')
             tracknum = -1
         tracks.append(((discnum, tracknum), tracktuple))
 

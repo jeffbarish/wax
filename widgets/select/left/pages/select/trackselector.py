@@ -39,6 +39,7 @@ class TrackSelector(GObject.Object):
 
     def on_options_play_restart(self, menuitem):
         first_set = playqueue_model_with_attrs[0]
+        first_set.play_tracks = list(first_set.tracks)
         self.view.set_selected_tracks(first_set.tracks)
 
 class TrackModel(Gtk.TreeStore):
@@ -321,6 +322,9 @@ class TrackView(Gtk.TreeView):
             with stop_emission(selection, 'changed'):
                 make_selections(clicked_row)
         elif (row := getattr(self, 'button_press_row', None)):
+            if row.path is None:
+                return
+
             # event_type == Gdk.EventType.BUTTON_RELEASE, but button_press_row
             # might not be set as the button press might have been on
             # something other than self (e.g., the context menu).
@@ -416,7 +420,8 @@ class TrackView(Gtk.TreeView):
                 # If a row got deleted then there might not be an entry in
                 # track_map for a track in the playqueue item.
                 if model_track := track_map.get(track_tuple.track_id, None):
-                    self.selection.select_path(model_track.path)
+                    with stop_emission(self.selection, 'changed'):
+                        self.selection.select_path(model_track.path)
                     if parent := model_track.get_parent():
                         parent_index = self.get_index(parent)
                         child_index = self.get_index(model_track.row)
@@ -424,7 +429,6 @@ class TrackView(Gtk.TreeView):
                         with stop_emission(self.selection, 'changed'):
                             self.expand_row(parent.path, False)
                             self.selection.select_path(parent.path)
-        GLib.idle_add(self.selection.emit, 'changed')
 
         # Scroll the first selected track into view.
         self.scroll_first_selected_track(track_tuples)

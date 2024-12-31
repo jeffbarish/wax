@@ -27,9 +27,6 @@ class Playqueue(Gtk.ScrolledWindow):
         playqueue_model.connect('row-inserted', self.on_row_inserted)
         playqueue_model.connect('row-deleted', self.on_row_deleted)
 
-        options_button.connect_menuitem('Play', 'Restart',
-                self.on_options_play_restart)
-
         register_connect_request('playqueue_select.playqueue_treeselection',
                 'changed', self.on_playqueue_select_selection_changed)
 
@@ -65,10 +62,6 @@ class Playqueue(Gtk.ScrolledWindow):
             index = children.index(eventbox)
             treepath = Gtk.TreePath.new_from_string(str(index))
             self.emit('playqueue-play-selection-changed', treepath)
-
-    def on_options_play_restart(self, menuitem):
-        first_set = playqueue_model_with_attrs[0]
-        first_set.play_tracks = list(first_set.tracks)
 
     def update_image(self, index, pb):
         queue_box = self.queue_box

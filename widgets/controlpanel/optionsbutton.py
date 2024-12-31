@@ -1,6 +1,6 @@
 """OptionsButton widget."""
 
-import logging
+from common.initlogging import logger
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -48,7 +48,7 @@ class OptionsButton(Gtk.MenuButton):
                 menuitem.connect('activate', handler)
                 break
         else:
-            logging.error(f'Option {option} in options menu for mode {mode} '
+            logger.error(f'Option {option} in options menu for mode {mode} '
                     f'does not exist')
 
     def sensitize_menuitem(self, mode, option, sensitive):
@@ -58,7 +58,7 @@ class OptionsButton(Gtk.MenuButton):
                 menuitem.set_sensitive(sensitive)
                 break
         else:
-            logging.error(f'Option {option} in options menu for mode {mode} '
+            logger.error(f'Option {option} in options menu for mode {mode} '
                     f'does not exist')
 
     def set_options_menu(self, mode):

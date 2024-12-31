@@ -19,6 +19,7 @@ from common.decorators import idle_add
 from common.types import DragCargo, GroupTuple
 from common.utilities import debug
 from common.utilities import make_time_str
+from common.utilities import playable_tracks
 from widgets import options_button
 
 from . import PlayqueueModelRow
@@ -326,26 +327,26 @@ class Playqueue(Gtk.Box):
         if treeiter is None:
             self.playqueue_treeselection.unselect_all()
 
+    @idle_add
     def on_track_selection_changed(self, selection):
         model = getattr_from_obj_with_name('selector.recording_selector.model')
-        track_view = getattr_from_obj_with_name('track-view')
-        tracks = track_view.get_selected_tracks()
         if model.recording is not None:
+            track_view = getattr_from_obj_with_name('track-view')
+            tracks = track_view.get_selected_tracks()
             uuid = model.recording.uuid
-            self.select_matching_set(tracks, uuid, model.work_num)
+            work_num = model.work_num
 
-    @idle_add
-    def select_matching_set(self, tracks, uuid, work_num):
-        # Traverse the rows of playqueue looking for a match.
-        for row in playqueue_model_with_attrs:
-            if (row.uuid, row.work_num) == (uuid, work_num) \
-                    and tracks == row.play_tracks:
+            # Traverse the rows of playqueue looking for a matching set.
+            for row in playqueue_model_with_attrs:
+                if (row.uuid, row.work_num, row.play_tracks) \
+                        == (uuid, work_num, tracks):
+                    playqueue_treeselection = self.playqueue_treeselection
+                    with stop_emission(playqueue_treeselection, 'changed'):
+                        playqueue_treeselection.select_iter(row.iter)
+                    break
+            else:
                 with stop_emission(self.playqueue_treeselection, 'changed'):
-                    self.playqueue_treeselection.select_iter(row.iter)
-                break
-        else:
-            with stop_emission(self.playqueue_treeselection, 'changed'):
-                self.playqueue_treeselection.unselect_all()
+                    self.playqueue_treeselection.unselect_all()
 
     def on_track_finished(self, player, n_tracks, track_id, uuid, work_num):
         # Remove the track from play_tracks with id track_id (which might not
@@ -371,22 +372,13 @@ class Playqueue(Gtk.Box):
         for row in playqueue_model_with_attrs:
             if (row.uuid, row.work_num) == (uuid, work_num):
                 primary_keys = config.genre_spec[genre]['primary']
-                work_long = recording.works[work_num].metadata
-                tracks_metadata = recording.tracks
-                primary_work_long = work_long[:len(primary_keys)]
+                work = recording.works[work_num]
+                primary_work_long = work.metadata[:len(primary_keys)]
                 primary_metadata, = zip(*primary_work_long)
                 primary_vals_str = '\n'.join(primary_metadata)
                 row.long_metadata = (primary_vals_str,)
 
-                tracks_metadata_dict = {track.track_id: track
-                        for track in tracks_metadata}
-                new_tracks = []
-                for track_id in recording.works[work_num].track_ids:
-                    if track_id in tracks_metadata_dict:
-                        new_track = tracks_metadata_dict[track_id]
-                        new_entry = new_track
-                        new_tracks.append(new_entry)
-                row.tracks = new_tracks
+                row.tracks = playable_tracks(recording.tracks, work.track_ids)
                 row.genre = genre
 
                 # Update the cover art in both select and play playqueues.
@@ -426,8 +418,8 @@ class Playqueue(Gtk.Box):
                 for g_name, g_tracks, g_metadata in work.trackgroups
                 for t in g_tracks}
         source_row = PlayqueueModelRow(thumbnail_pb, (primary_vals_str,),
-                recording.tracks, group_map, genre, recording.uuid,
-                work_num, False, recording.props, True, play_tracks)
+                play_tracks, group_map, genre, recording.uuid,
+                work_num, False, recording.props, True, list(play_tracks))
         playqueue_model.append(source_row)
 
     def _display_item_duration(self, treeiter):

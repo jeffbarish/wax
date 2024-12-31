@@ -28,8 +28,8 @@ def css_load_from_data(css_data):
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
     css_provider.load_from_data(css_data.encode('utf-8'))
 
-# Extract the TrackTuples corresponding to track_ids.
+# Extract the TrackTuples corresponding to track_ids in the order
+# specified in tracks.
 def playable_tracks(tracks, track_ids):
-    track_dict = {t.track_id: t for t in tracks}
-    return [track_dict[track_id] for track_id in track_ids]
+    return [t for t in tracks if t.track_id in track_ids]
 

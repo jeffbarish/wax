@@ -27,13 +27,18 @@ EXT_MAP = {}
 # A map from the extension to the codec name that we will use as a property.
 CODEC_NAMES = {}
 
+# SaveDict is used for tags.
+class SafeDict(dict):
+    def __missing__(self, key):
+        return ('',)
+
 def extract(source_path):
     """The main function automatically calls the right extractor based on
     the extension in source_path."""
     _, ext = source_path.rsplit('.', 1)
     ext_l = ext.lower()
 
-    tags = {}  # the dict of tags that we extract
+    tags = SafeDict()  # the dict of tags that we extract
     try:
         tags['codec'] = [CODEC_NAMES[ext_l]]
     except KeyError:

@@ -174,7 +174,7 @@ class Player(GObject.Object):
         self.trackid_map = {tracktuple.track_id: tracktuple
                 for tracktuple in playqueue_model[0].tracks}
 
-        for tracktuple in playqueue_model[0].play_tracks:
+        for tracktuple in playqueue_model[0].tracks:
             self.uuid = uuid = playqueue_model[0].uuid
             self.work_num = playqueue_model[0].work_num
             track_id = tracktuple.track_id

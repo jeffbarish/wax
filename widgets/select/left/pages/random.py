@@ -117,7 +117,6 @@ class Random(Gtk.ScrolledWindow):
             play_tracks = playable_tracks(recording.tracks, track_ids)
             if not alltracks:
                 play_tracks = [random.choice(play_tracks)]
-            recording = recording._replace(tracks=list(play_tracks))
             for track in play_tracks:
                 duration -= track.duration
             playqueue_select.enqueue_recording(random_genre, recording,

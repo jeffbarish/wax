@@ -21,6 +21,7 @@ from common.decorators import emission_stopper
 from common.decorators import idle_add
 from common.types import GroupTuple
 from common.utilities import debug
+from common.utilities import playable_tracks
 from unidecode import unidecode
 from widgets import control_panel
 
@@ -148,8 +149,7 @@ class SearchIncremental(Gtk.Box):
         work = recording.works[work_num]
         if all(any(v.startswith(m) for v in values_l) for m in match_text_l):
             # tracks is a list of tracktuples of playable tracks.
-            tracks = [t for t in recording.tracks
-                    if t.track_id in work.track_ids]
+            tracks = playable_tracks(recording.tracks, work.track_ids)
         else:
             group_map = {t: GroupTuple(g_name, g_metadata)
                     for g_name, g_track_ids, g_metadata in work.trackgroups
