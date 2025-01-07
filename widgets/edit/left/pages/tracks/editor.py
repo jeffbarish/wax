@@ -427,6 +427,15 @@ class TracksMetadataEditor(Gtk.Box):
             iter_still_valid = model.remove(first_iter)
 
         group_title = stripper(self.group_title_entry.get_text())
+
+        # Escape parentheses in group_title so that they do not have a
+        # special meaning when group_title is used as the match string
+        # in re.sub. Although these commands appear to be substituting
+        # one string for the same string, they do accomplish what is
+        # needed.
+        match_string = re.sub(r'\(', r'\(', group_title)
+        match_string = re.sub(r'\)', r'\)', match_string)
+
         parent_track_tuple = TrackTuple._convert(GroupTuple(group_title))
         parent_row = (True, parent_track_tuple, True)
         if iter_still_valid:
@@ -438,7 +447,7 @@ class TracksMetadataEditor(Gtk.Box):
             track_tuple = child_row.track_tuple
 
             # Remove 'group_title' from track title, if it is actually there.
-            track_title = re.sub(group_title, '', track_tuple.title)
+            track_title = re.sub(match_string, '', track_tuple.title)
             track_title = stripper(track_title)
             new_track_tuple = track_tuple._replace(title=track_title)
 

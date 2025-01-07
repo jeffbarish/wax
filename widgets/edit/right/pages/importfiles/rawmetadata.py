@@ -175,6 +175,7 @@ class RawMetadata(Gtk.ScrolledWindow):
         worklines = defaultdict(set)
         tracknumbers = defaultdict(set)
         images_set = set()
+        tags = None
 
         self.emit('import-started', ripper.uuid, ripper.disc_num)
         for track_num, file_name in enumerate(file_names):
