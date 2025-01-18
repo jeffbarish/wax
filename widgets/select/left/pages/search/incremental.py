@@ -185,15 +185,11 @@ class SearchIncremental(Gtk.Box):
             genre, uuid, work_num, tracks):
         self.select_matching_flowboxchild()
 
-    @idle_add
     def on_recording_selection_changed(self, recording_selection):
         self.select_matching_flowboxchild()
 
     @emission_stopper()
     def on_playqueue_select_selection_changed(self, selection):
-        model, treeiter = selection.get_selected()
-        if treeiter is None:
-            return
         self.select_matching_flowboxchild()
 
     @idle_add
@@ -202,12 +198,17 @@ class SearchIncremental(Gtk.Box):
                 'selector.recording_selection')
         model_filter, selected_row_iter = recording_selection.get_selected()
         if selected_row_iter is None:
+            self.incremental_flowbox.unselect_all()
             return
 
         def finish():
             model = model_filter.props.child_model
             recording = model.recording
 
+            # When responding to a change in selection (recording, playqueue,
+            # or sibling), matching is agnostic to track selection. However,
+            # when driving a selection, the flowboxchild delegates selection
+            # to selector, which accounts for track selection.
             for child, (uuid, work_num) in self.flowboxchild_map.items():
                 if (uuid, work_num) == (recording.uuid, model.work_num):
                     with signal_blocker(self.incremental_flowbox,
@@ -242,8 +243,6 @@ class SearchIncremental(Gtk.Box):
             Gtk.drag_set_icon_pixbuf(context, pb, int(x), int(y))
 
     def on_drag_data_get(self, flowboxchild, context, data, info, time):
-        recording, uuid, work_num = self.get_recording(flowboxchild)
-
         # Delegate to selector.on_recording_selector_drag_data_get.
         selector = getattr_from_obj_with_name('selector')
         treeview = selector.recording_selector.view
