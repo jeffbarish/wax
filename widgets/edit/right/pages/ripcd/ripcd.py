@@ -196,25 +196,6 @@ class RipCD(Gtk.Box):
         self.ripcd_progressbar.set_fraction(track_position)
 
     def on_rip_finished(self, ripper):
-        # At this point, ripper still knows the uuid and disc_num for the
-        # rip that just finished. Before initializing controls (at which
-        # point it becomes possible to start a new rip or add), have ripper
-        # tag the sound files that it just created.
-        if self.mbquery is not None:
-            tags = dict(self.mbquery.metadata)
-            # I compute n_tracks in musicbrainz. It is the number of tracks
-            # in medium['track-list']. However, cdparanoiasrc apparently
-            # gets TRACKTOTAL from the TOC, so I do not need n_tracks. Also
-            # remove involved_people_list, which might be more information
-            # than is usually provided in tags.
-            for key in ('n_tracks', 'involved_people_list', 'asin'):
-                if key in tags:
-                    del tags[key]
-            ripper.tag_files(tags, self.mbquery.tracks)
-
-            image_editor = getattr_from_obj_with_name('edit-images-page')
-            image_editor.tag_cover_art(ripper.uuid)
-
         self._initialize_controls()
 
         # If I just finished ripping a CD, the next operation might be
@@ -254,8 +235,8 @@ class RipCD(Gtk.Box):
     def read_cd(self, extract_cb):
         self.queue_message('Querying MusicBrainz')
 
-        image_editor = getattr_from_obj_with_name('edit-images-page')
-        image_editor.cancellable.reset()
+        images_editor = getattr_from_obj_with_name('edit-images-page')
+        images_editor.cancellable.reset()
 
         # The subprocess needs to get disc itself because disc contains
         # ctypes objects which cannot be marshaled, so launcher cannot
@@ -354,8 +335,8 @@ class RipCD(Gtk.Box):
         if not hasattr(ripper, 'disc_num'):
             return
         disc_num = ripper.disc_num
-        image_editor = getattr_from_obj_with_name('edit-images-page')
-        image_editor.get_images(mbquery, disc_num)
+        images_editor = getattr_from_obj_with_name('edit-images-page')
+        images_editor.get_images(mbquery, disc_num)
 
     def _raw_extract(self, mbquery):
         self.raw_metadata.display_metadata(mbquery.metadata,

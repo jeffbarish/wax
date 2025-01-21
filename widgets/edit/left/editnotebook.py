@@ -12,6 +12,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GLib, GObject
 
+import widgets.edit.left.tagextractors as tagextractors
 from common.config import config
 from common.connector import register_connect_request
 from common.connector import getattr_from_obj_with_name
@@ -20,7 +21,7 @@ from common.constants import SOUND, DOCUMENTS, IMAGES
 from common.constants import COMPLETERS
 from common.descriptors import QuietProperty
 from common.types import RecordingTuple, WorkTuple
-from common.utilities import debug
+from common.utilities import debug, playable_tracks
 from ripper import ripper
 from widgets import options_button
 from widgets import edit
@@ -127,6 +128,8 @@ class EditNotebook(Gtk.Notebook):
         register_connect_request('edit-ripcd.abort_button', 'clicked',
                 self.on_abort_button_clicked)
 
+        ripper.connect('rip-finished', self.on_rip_finished)
+
     def on_rip_create_clicked(self, button):
         self.clear_all_forms()
         self.set_sensitive(True)
@@ -191,9 +194,10 @@ class EditNotebook(Gtk.Notebook):
         self.revise_mode = False
 
         # work-deleted triggers deletion of the work in selector.
-        # model.recording does not change until the work is deleted. Until
-        # the work is deleted, clear_or_repopulate_from_selection does not
-        # clear the display.
+        # model.recording does not change until the work is deleted.
+        # clear_or_repopulate_from_selection examines model.recording
+        # to decide whether to clear or repopulate. Consequently, the
+        # work must be deleted before clear_or_repopulate_from_selection.
         self.emit(
             'work-deleted', work.genre, self.recording.uuid, self.work_num)
 
@@ -221,15 +225,13 @@ class EditNotebook(Gtk.Notebook):
                 self.delete_short_metadata(ripper.uuid)
                 self.delete_long_metadata(ripper.uuid)
 
-                self.revise_mode = False
-
-                GLib.idle_add(self.emit,
-                        'recording-deleted', self.recording.uuid)
-            else:
-                # If the user did not save the recording before clicking
-                # abort then it is still possible to go back to the original
-                # selection.
-                self.clear_or_repopulate_from_selection()
+                # Delete the work first so that selector.on_work_deleted
+                # will update the filter button menus
+                work = self.recording.works[self.work_num]
+                self.emit('work-deleted', work.genre, self.recording.uuid,
+                        self.work_num)
+                self.emit('recording-deleted', self.recording.uuid)
+            GLib.idle_add(self.clear_or_repopulate_from_selection)
         elif self.recording is not None:  # disc_num > 0 and recording saved
             for work_num, work in self.recording.works.items():
                 work.track_ids[:] = [(d_n, t_n) for d_n, t_n in work.track_ids
@@ -237,6 +239,14 @@ class EditNotebook(Gtk.Notebook):
             self.recording.tracks[:] = [t for t in self.recording.tracks
                     if t.track_id[0] != ripper.disc_num]
             self.write_long_metadata(self.recording)
+
+    def on_rip_finished(self, ripper):
+        # If self.recording is None, user still has not saved metadata.
+        # ripper will tag the files when he does.
+        if self.recording is not None:
+            tags, jpg_data, tracks = self.derive_tags(self.recording,
+                    self.work_num)
+            ripper.tag_files(tags, jpg_data, tracks[:1])
 
     def on_changed(self, obj, param):
         sensitive = self.changed
@@ -364,15 +374,19 @@ class EditNotebook(Gtk.Notebook):
         images_editor = self.pages['images'].page_widget
         images_editor.write_images(ripper.uuid)
 
-        if self.action == Action.READCD:
-            images_editor.tag_cover_art(ripper.uuid)
-
         # Get edit-docs-page to write the current docs to files.
         docs_editor = self.pages['docs'].page_widget
         docs_editor.write_docs(ripper.uuid)
 
         files_editor = self.pages['files'].page_widget
         files_editor.populate(self.recording.uuid, new_work.track_ids)
+
+        # Tell ripper to tag the sound files. ripper will do nothing if
+        # a rip is underway. In that case, ripper will tag the files on
+        # rip-finished.
+        tags, jpg_data, tracks = self.derive_tags(self.recording,
+                self.work_num)
+        ripper.tag_files(tags, jpg_data, tracks)
 
         # Emit recording-saved to trigger updates to the models.
         # The signal is connected to handlers in select.selector,
@@ -399,6 +413,9 @@ class EditNotebook(Gtk.Notebook):
             self._revise_mode = False
             self.recording = None
         else:
+            # If the user did not save the recording before clicking
+            # abort then it is still possible to go back to the original
+            # selection.
             work_metadata_editor = self.pages['work'].page_widget
             if self.select_genre != work_metadata_editor.edit_genre:
                 work_metadata_editor.genre_button.genre = self.select_genre
@@ -489,6 +506,45 @@ class EditNotebook(Gtk.Notebook):
                 and self.work_num == work_num:
             properties_editor = self.pages['properties'].page_widget
             properties_editor.populate(self.recording.props, props)
+
+    def derive_tags(self, recording, work_num):
+        work = recording.works[work_num]
+
+        all_keys = sum(config.genre_spec[work.genre].values(), [])
+        work_long, work_short = self.get_work_metadata()
+        short_d = dict(zip(all_keys, work_short))
+        long_d = dict(zip(all_keys, work_long))
+
+        # If there is no TagExtractor for this genre then we are done.
+        try:
+            TagExtractor = getattr(tagextractors, work.genre)
+        except AttributeError:
+            return {}, None, []
+
+        tag_extractor = TagExtractor(long_d, short_d)
+
+        tracks = []
+        for track in playable_tracks(recording.tracks, work.track_ids):
+            # If there are trackgroups, get the trackgroup title
+            # corresponding to track_id.
+            trackgroup_title = ''
+            for tg_title, t_ids, tg_meta in work.trackgroups:
+                if track_id in t_ids:
+                    trackgroup_title = tg_title
+                    break
+
+            title = tag_extractor(trackgroup_title, track.title)
+            track = track._replace(title=title)
+            tracks.append(track)
+
+        image_p = Path(IMAGES, recording.uuid, f'image-00.jpg')
+        if os.path.exists(image_p):
+            with open(image_p, 'rb') as image_fo:
+                jpg_data = image_fo.read()
+        else:
+            jpg_data = None
+
+        return tag_extractor.tags, jpg_data, tracks
 
     # Customize set_sensitive so that genre_button is always sensitive.
     # work.editor also has a custom set_sensitive. Otherwise, this

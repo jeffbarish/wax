@@ -301,25 +301,6 @@ class ImagesEditor(Gtk.Box):
                     new_path = Path(f'{size}-{row_index:02d}.jpg')
                     row[i].savev(str(new_path), 'jpeg', [], [])
 
-    def tag_cover_art(self, uuid):
-        if len(self.images_liststore) == 0:
-            return
-
-        pb = self.images_liststore[0][0]
-        success, jpg_data = pb.save_to_bufferv('jpeg', None, None)
-        if not success:
-            return
-
-        pic = Picture()
-        pic.data = jpg_data
-        pic.type = id3.PictureType.COVER_FRONT
-        pic.mime = 'image/jpeg'
-        pic.width = 500
-        pic.height = 500
-        pic.depth = 16
-
-        ripper.add_picture(pic)
-
     def append_images(self, images):
         for image_data, image_type in images:
             pb = self._load_pixbuf(image_data)

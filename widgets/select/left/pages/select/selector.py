@@ -193,8 +193,8 @@ class Selector(Gtk.Grid):
 
         # Set filter button visibility.
         for index in config.filter_config[genre]:
-            self.filter_button_box.show_button(index)
-            self.update_filter_button_menus(self.filter_button_box)
+            filter_button_box.show_button(index)
+            self.update_filter_button_menus(filter_button_box)
 
         # The first row gets selected if the user clicks on a header divider
         # or types tab immediately after starting wax.
@@ -514,7 +514,7 @@ class Selector(Gtk.Grid):
         with stop_emission(self.recording_selection, 'changed'):
             self.recording_selection.unselect_all()
 
-        GLib.idle_add(self.track_scrolled_window.hide)
+        self.track_scrolled_window.hide()
 
     # abort emits recording-deleted; all works with the given uuid in the
     # current genre should be deleted. editnotebook deletes works in other
@@ -534,6 +534,7 @@ class Selector(Gtk.Grid):
                 model.remove(row_iter)
 
         self.recording_selection.unselect_all()
+        self.track_scrolled_window.hide()
 
     def on_track_started(self, player, tracktuple, grouptuple,
             track_duration, more_tracks, uuid):

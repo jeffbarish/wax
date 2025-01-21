@@ -11,7 +11,9 @@ from pathlib import Path
 import gi
 gi.require_version('GObject', '2.0')
 from gi.repository import GObject
-from mutagen.flac import FLAC
+
+from mutagen.flac import FLAC, Picture
+from mutagen import id3
 
 from common.connector import register_connect_request
 from common.constants import IMAGES, DOCUMENTS, SOUND, TRANSFER
@@ -181,6 +183,33 @@ class Ripper(GObject.Object):
 
         self.do('rip', self.uuid, self.disc_num)
 
+    def tag_files(self, tags, jpg_data, tracks):
+        if self.is_ripping:
+            return
+
+        disc_dir = Path(SOUND, self.uuid, str(self.disc_num))
+        for track in tracks:
+            file_p = Path(disc_dir, f'{track.track_num:02d}.flac')
+            tagger = FLAC(str(file_p))
+
+            tagger.update(tags)
+
+            if jpg_data is not None:
+                pic = Picture()
+                pic.data = jpg_data
+                pic.type = id3.PictureType.COVER_FRONT
+                pic.mime = 'image/jpeg'
+                pic.width = 500
+                pic.height = 500
+                pic.depth = 16
+
+                tagger.clear_pictures()
+                tagger.add_picture(pic)
+
+            tagger['title'] = track.title
+
+            tagger.save()
+
     # -Import------------------------------------------------------------------
     # Called from importfiles.import_ when filechooser has sound files
     # selected.
@@ -218,25 +247,6 @@ class Ripper(GObject.Object):
         Path(SOUND, self.uuid, str(self.disc_num)).mkdir()
 
     # -Other-------------------------------------------------------------------
-    def tag_files(self, tags, tracks):
-        disc_dir = Path(SOUND, self.uuid, str(self.disc_num))
-        for track_p in disc_dir.glob('*.flac'):
-            track_num = int(track_p.stem)
-            track = tracks[track_num]
-            tags.update(title=track.title)
-
-            tagger = FLAC(str(track_p))
-            tagger.update(tags)
-            tagger.save()
-
-    def add_picture(self, picture):
-        disc_dir = Path(SOUND, self.uuid, str(self.disc_num))
-        for track_p in disc_dir.glob('*.flac'):
-            tagger = FLAC(str(track_p))
-            tagger.clear_pictures()
-            tagger.add_picture(picture)
-            tagger.save()
-
     def reset(self):
         self.uuid = self.disc_id = None
         self.disc_ids = []
