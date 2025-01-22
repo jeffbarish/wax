@@ -48,8 +48,6 @@ class PlayNotebook(Gtk.Notebook):
 
         register_connect_request('selector.recording_selection', 'changed',
                 self.on_recording_selection_changed)
-        register_connect_request('edit-left-notebook', 'recording-saved',
-                self.on_recording_saved)
 
     def on_playnotebook_realize(self, playnotebook):
         self.grab_focus()
@@ -85,15 +83,4 @@ class PlayNotebook(Gtk.Notebook):
             else:
                 self.pages['docs'].page_widget.hide()
             self.pages['properties'].page_widget.populate(props_rec, props_wrk)
-
-    def on_recording_saved(self, editnotebook, genre):
-        uuid = editnotebook.recording.uuid
-        work_long, work_short = editnotebook.get_work_metadata()
-        nonce = editnotebook.get_nonce()
-        keys = genre_spec.all_keys(genre)
-        metadata = list(zip(keys, work_long))
-        self.pages['metadata'].page_widget.populate(metadata, nonce, uuid)
-
-        props_rec, props_wrk = editnotebook.get_props()
-        self.pages['properties'].page_widget.populate(props_rec, props_wrk)
 

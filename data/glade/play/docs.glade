@@ -92,7 +92,6 @@
             <property name="title" translatable="yes">file_name</property>
             <child>
               <object class="GtkCellRendererText" id="docs_filename_renderer">
-                <property name="editable">True</property>
                 <property name="ellipsize">middle</property>
                 <signal name="edited" handler="on_filename_renderer_edited" swapped="no"/>
               </object>

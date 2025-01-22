@@ -8,6 +8,8 @@ from gi.repository import Gtk
 
 from common.constants import DOCUMENTS, TRANSFER
 from common.constants import EXPAND
+from common.contextmanagers import stop_emission
+from common.decorators import emission_stopper
 from common.utilities import debug
 from widgets.pdfviewer import MyDocsListstore, PdfViewer
 
@@ -17,7 +19,6 @@ class DocsView(Gtk.Box):
 
     docs_liststore = Gtk.Template.Child()
     docs_treeselection = Gtk.Template.Child()
-    docs_filename_renderer = Gtk.Template.Child()
     docs_pdf_next_button = Gtk.Template.Child()
     docs_pdf_prev_button = Gtk.Template.Child()
 
@@ -40,6 +41,7 @@ class DocsView(Gtk.Box):
         self.show()
 
     @Gtk.Template.Callback()
+    @emission_stopper()
     def on_docs_treeselection_changed(self, selection):
         model, treeiter = selection.get_selected()
         sensitive = (treeiter is not None)
@@ -47,7 +49,7 @@ class DocsView(Gtk.Box):
         self.docs_pdf_prev_button.props.sensitive = sensitive
 
         if treeiter is not None:
-            filename, uuid = model[treeiter][0], model[treeiter][1]
+            filename, uuid = model[treeiter]
             filename = Path(DOCUMENTS, uuid, filename).absolute().as_uri()
             self.pdf_viewer.set_doc(filename)
             self.pdf_viewer.show_all()
@@ -63,7 +65,8 @@ class DocsView(Gtk.Box):
         self.queue_draw()
 
     def populate(self, uuid):
-        self.clear()
+        with stop_emission(self.docs_treeselection, 'changed'):
+            self.clear()
 
         documents_dir = Path(DOCUMENTS, uuid)
         for filename in documents_dir.iterdir():

@@ -190,8 +190,13 @@ class Ripper(GObject.Object):
         disc_dir = Path(SOUND, self.uuid, str(self.disc_num))
         for track in tracks:
             file_p = Path(disc_dir, f'{track.track_num:02d}.flac')
-            tagger = FLAC(str(file_p))
 
+            # If file_p does not exist (most likely because the sound file
+            # is not flac), then do not tag it.
+            if not file_p.is_file():
+                return
+
+            tagger = FLAC(str(file_p))
             tagger.update(tags)
 
             if jpg_data is not None:
