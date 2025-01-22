@@ -529,7 +529,7 @@ class EditNotebook(Gtk.Notebook):
             # corresponding to track_id.
             trackgroup_title = ''
             for tg_title, t_ids, tg_meta in work.trackgroups:
-                if track_id in t_ids:
+                if track.track_id in t_ids:
                     trackgroup_title = tg_title
                     break
 
