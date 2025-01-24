@@ -6,7 +6,7 @@ from unidecode import unidecode
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GObject, Gdk
+from gi.repository import Gtk, GObject, Gdk, GLib
 
 from common.config import config
 from common.constants import COMPLETERS, IMAGES_DIR, NOEXPAND
@@ -371,6 +371,7 @@ class NonceWorkMetadataField(SecondaryWorkMetadataField):
         entry.set_size_request(80, -1)
         entry.connect('changed', self.on_key_changed)
         self.attach(entry, 0, 0, 1, 1)
+        GLib.idle_add(entry.grab_focus)
 
     # Override changed handler for value entry.
     def on_entry_changed(self, entry):
