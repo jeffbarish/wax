@@ -137,7 +137,8 @@ class NonceWorkMetadataGroup(WorkMetadataGroup):
     def append_field(self):
         vbox = self.get_child()
         for field in vbox.get_children():
-            if not field.props.visible:
+            # Reuse existing field if it is not visible or empty.
+            if not field.props.visible or field.is_empty():
                 field.clear_values()
                 break
         else:
@@ -146,6 +147,7 @@ class NonceWorkMetadataGroup(WorkMetadataGroup):
                     self.on_work_metadata_field_changed)
             vbox.pack_start(field, *NOEXPAND)
         field.show_all()
+        field.grab_focus() # the key entry grabs focus
 
     def clear(self):
         vbox = self.get_child()

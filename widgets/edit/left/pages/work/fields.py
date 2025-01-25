@@ -6,7 +6,7 @@ from unidecode import unidecode
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GObject, Gdk, GLib
+from gi.repository import Gtk, GObject, Gdk
 
 from common.config import config
 from common.constants import COMPLETERS, IMAGES_DIR, NOEXPAND
@@ -354,9 +354,13 @@ class NonceWorkMetadataField(SecondaryWorkMetadataField):
     metadata_fields = {}
 
     def __str__(self):
-        if not self.key:
+        if not hasattr(self, 'key') or not self.key:
             return ''
         return ', '.join(repr(t) for t in self.values())
+
+    def is_empty(self):
+        return all(not child.get_text()
+                for child in self if isinstance(child, Gtk.Entry))
 
     # Override set_key so that nonce fields do not have a completion.
     def set_key(self, key):
@@ -366,12 +370,14 @@ class NonceWorkMetadataField(SecondaryWorkMetadataField):
 
         self.metadata_fields[key] = self
 
+    def grab_focus(self):
+        self.key_entry.grab_focus()
+
     def add_key_field(self):
         self.key_entry = entry = Gtk.Entry()
         entry.set_size_request(80, -1)
         entry.connect('changed', self.on_key_changed)
         self.attach(entry, 0, 0, 1, 1)
-        GLib.idle_add(entry.grab_focus)
 
     # Override changed handler for value entry.
     def on_entry_changed(self, entry):
