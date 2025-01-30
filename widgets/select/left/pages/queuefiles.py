@@ -108,7 +108,7 @@ class QueueFiles(Gtk.ScrolledWindow):
                 # whence it came.
                 thumbnail_fn = Path(IMAGES, row.uuid, 'thumbnail-00.jpg')
                 if not thumbnail_fn.exists():
-                    thumbnail_fn = Path(IMAGES_DIR, 'noimage_thumbnail.jpg')
+                    thumbnail_fn = Path(IMAGES_DIR, 'noimage_thumbnail.png')
                 with open(thumbnail_fn, 'rb') as fo:
                     thumbnail_data = fo.read()
 

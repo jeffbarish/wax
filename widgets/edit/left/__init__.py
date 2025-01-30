@@ -37,3 +37,5 @@ edit_notebook = EditNotebook()
 edit_left = EditLeft()
 edit_left.pack_end(edit_notebook, *EXPAND)
 
+unicode_kbd = UnicodeKbd()
+

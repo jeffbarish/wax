@@ -1,6 +1,8 @@
+from .cddrivewatcher import CDDriveWatcher
 from .ripper import Ripper
 
 ripper = Ripper()
+cd_drive_watcher = CDDriveWatcher()
 
 import signal
 import atexit

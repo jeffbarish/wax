@@ -31,15 +31,17 @@ class CDDriveWatcher(GObject.Object):
             try:
                 fd = os.open(CDROM_DRIVE, os.O_RDONLY | os.O_NONBLOCK)
             except FileNotFoundError:
-                self.disc_ready = False
                 self.disc_id = None
+                if self.disc_ready:
+                    self.disc_ready = False
                 return True
 
             try:
                 status = fcntl.ioctl(fd, CDROM_DRIVE_STATUS)
             except OSError:
-                self.disc_ready = False
                 self.disc_id = None
+                if self.disc_ready:
+                    self.disc_ready = False
                 return True
 
             try:
@@ -75,7 +77,4 @@ class CDDriveWatcher(GObject.Object):
 
         disc = discid.read()
         self.disc_id = disc.id
-
-
-# cd_drive_watcher = CDDriveWatcher()
 

@@ -110,6 +110,3 @@ class UnicodeKbd(Gtk.Window):
         event.window = self.gdk_window
         event.put()
 
-
-unicode_kbd = UnicodeKbd()
-

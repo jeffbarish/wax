@@ -1,24 +1,24 @@
 """Controls for ripping CDs."""
 
 import os
+import shelve
 
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject
 
 from . import doublebutton
+from .disciddialog import DiscidDialog
 from .rawmetadata import RawMetadata
-from .cddrivewatcher import CDDriveWatcher
 from common.connector import getattr_from_obj_with_name
 from common.connector import register_connect_request
-from common.constants import EXPAND, NOEXPAND
+from common.constants import EXPAND, NOEXPAND, LONG
 from common.decorators import idle_add
 from common.types import TrackTuple
 from common.utilities import debug
 from common.utilities import css_load_from_data
-from ripper import ripper
+from ripper import ripper, cd_drive_watcher
 from widgets import options_button
-from widgets import edit
 from widgets.messagelabel import MessageLabel
 from worker import worker
 
@@ -50,8 +50,6 @@ class RipCD(Gtk.Box):
 
     raw_metadata_scrolledwindow = Gtk.Template.Child()
 
-    cd_drive_watcher = CDDriveWatcher()
-
     def __init__(self):
         super().__init__()
         self.set_name('edit-ripcd')
@@ -60,7 +58,7 @@ class RipCD(Gtk.Box):
 
         css_load_from_data(css_data)
 
-        doublebutton.config(0, self.cd_drive_watcher.disc_ready, False)
+        doublebutton.config(0, cd_drive_watcher.disc_ready, False)
         doublebutton.connect('clicked', self.on_doublebutton_clicked)
 
         self.ripcd_stack_box.pack_start(doublebutton, *NOEXPAND)
@@ -92,15 +90,15 @@ class RipCD(Gtk.Box):
         register_connect_request('genre-button', 'genre-changed',
                 self.on_genre_changed)
 
-        self.cd_drive_watcher.connect('notify::disc-ready',
+        cd_drive_watcher.connect('notify::disc-ready',
                 self.on_disc_ready_changed)
 
     # -Signal handlers---------------------------------------------------------
-    def on_disc_ready_changed(self, cddrivewatcher, param):
+    def on_disc_ready_changed(self, cd_drive_watcher, param):
         selection = getattr_from_obj_with_name('selector.recording_selection')
         model, treeiter = selection.get_selected()
         recording_selected = treeiter is not None
-        disc_ready = cddrivewatcher.disc_ready
+        disc_ready = cd_drive_watcher.disc_ready
         changed = getattr_from_obj_with_name('edit-left-notebook.changed')
         sensitive = (recording_selected or changed) and disc_ready
         doublebutton.config(None, disc_ready, sensitive)
@@ -110,12 +108,26 @@ class RipCD(Gtk.Box):
 
         self.cd_eject_button.set_sensitive(disc_ready)
 
+        self.check_for_discid()
+
+    def check_for_discid(self):
+        if cd_drive_watcher.disc_id is None:
+            return
+
+        with shelve.open(LONG, 'r') as recording_shelf:
+            for uuid, recording in recording_shelf.items():
+                if cd_drive_watcher.disc_id in recording.discids:
+                    dialog = DiscidDialog(self, recording)
+                    dialog.run()
+                    dialog.destroy()
+                    break
+
     def on_recording_selection_changed(self, selection):
         model, treeiter = selection.get_selected()
         recording_selected = treeiter is not None
         changed = getattr_from_obj_with_name('edit-left-notebook.changed')
         busy = changed or ripper.is_ripping
-        disc_ready = self.cd_drive_watcher.disc_ready
+        disc_ready = cd_drive_watcher.disc_ready
         doublebutton.config(recording_selected and not busy,
                 disc_ready, recording_selected and disc_ready)
 
@@ -123,7 +135,7 @@ class RipCD(Gtk.Box):
         options_button.sensitize_menuitem('Edit', 'Query MB', sensitive)
 
     def on_genre_changed(self, genre_button, genre):
-        disc_ready = self.cd_drive_watcher.disc_ready
+        disc_ready = cd_drive_watcher.disc_ready
         doublebutton.config(0, disc_ready, False)
 
     def on_import_finished(self, rawmetadata):
@@ -164,8 +176,8 @@ class RipCD(Gtk.Box):
         # other condition must be True. It is also possible that they are
         # both True. In that case, the disc gets priority.
         recording = getattr_from_obj_with_name('edit-left-notebook.recording')
-        if self.cd_drive_watcher.disc_ready:
-            discid = self.cd_drive_watcher.disc_id
+        if cd_drive_watcher.disc_ready:
+            discid = cd_drive_watcher.disc_id
         else:
             discid = recording.discids[0]
         self.query_mb(discid, self.query_mb_cb)
@@ -182,7 +194,7 @@ class RipCD(Gtk.Box):
     def on_options_edit_delete_activate(self, menuitem):
         self.raw_metadata.clear()
         self._initialize_controls()
-        disc_ready = self.cd_drive_watcher.disc_ready
+        disc_ready = cd_drive_watcher.disc_ready
         doublebutton.config(0, disc_ready, False)
 
     # -Ripper signal handlers--------------------------------------------------
@@ -384,7 +396,7 @@ class RipCD(Gtk.Box):
 
         # rip_disc creates SOUND, IMAGES, DOCUMENTS. (Likewise, importer
         # creates those directories during an import operation.)
-        ripper.rip_disc(self.cd_drive_watcher.disc_id)
+        ripper.rip_disc(cd_drive_watcher.disc_id)
 
     def add_cd(self):
         doublebutton.hide()
@@ -400,7 +412,7 @@ class RipCD(Gtk.Box):
 
         self.read_sectors(self.read_sectors_tracks_cb)
 
-        ripper.add_disc(self.cd_drive_watcher.disc_id)
+        ripper.add_disc(cd_drive_watcher.disc_id)
 
     def _initialize_controls(self):
         self.ripcd_right_stack.set_visible_child_name('create')
