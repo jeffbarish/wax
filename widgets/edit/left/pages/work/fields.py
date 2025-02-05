@@ -234,8 +234,7 @@ class PrimaryWorkMetadataField(WorkMetadataField):
 
     def set_column_width(self, width):
         for entry_long, entry_short in self.entries:
-            entry_short.set_size_request(min(width, 305), -1)
-            entry_short.queue_draw()
+            entry_short.set_size_request(width, -1)
 
     def append_value_field(self, value=('', '')):
         self.button_right.set_sensitive(any(value))

@@ -1,7 +1,6 @@
 """This package assembles the widgets for selecting recordings."""
 
 from widgets.genrebutton import GenreButton
-
 genre_button = GenreButton()
 
 # There is a second instance in work.editor, but we care about signals only
@@ -9,7 +8,11 @@ genre_button = GenreButton()
 genre_button.set_name('genre-button')
 
 
-from .selector import Selector
+from .filterbutton import FilterButtonBox
+filter_button_box = FilterButtonBox()
 
+
+from .selector import Selector
 page_widget = Selector()
+
 

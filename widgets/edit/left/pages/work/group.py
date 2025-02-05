@@ -103,6 +103,11 @@ class WorkMetadataGroup(Gtk.Frame):
         for field, width in zip(fields, widths):
             field.set_column_width(width)
 
+    def set_last_field_short_entry_width(self, width):
+        vbox = self.get_child()
+        fields = vbox.get_children()
+        fields[-1].set_column_width(width)
+
     # Get the metadata field for each key and populate the value fields.
     def populate(self, metadata):
         for key, values in metadata:

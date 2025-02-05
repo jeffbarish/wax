@@ -1,12 +1,21 @@
-"""The config dict lives in memory (it is not big). It contains five keys,
-'genre spec', 'column widths', 'filter config', 'random_config', 'user
-props', and 'completers'. The value for all but 'user props' is a dict;
-for the latter it is a list. The values can be accessed either as
-config['genre spec'] or config.genre_spec. A write to either of those
-triggers a write to disk of the pickle for the entire config dict. As
-with shelve, updating a mutable within one of the dicts will not update
-the pickle. To update the pickle, there must be a statement like
-config.filter_config = val."""
+"""The config dict lives in memory (it is not big). It contains ten keys:
+
+'genre_spec': dict(genre: dict(class: list))
+'column widths': dict(genre: list)
+'filter config': dict(genre: list)
+'random config': dict(genre: list)
+'user props': list
+'completers': dict(genre: list)
+'volume': float
+'sort indicators': dict(genre: list)
+'geometry': dict
+'trackmetadata keys': list
+
+The values can be accessed either as config['genre spec'] or config.genre_spec.
+A write to either of those triggers a write to disk of the pickle for the
+entire config dict. As with shelve, updating a mutable within one of the dicts
+will not update the pickle. To update the pickle, there must be a statement
+like config.filter_config = val."""
 
 import contextlib
 import pickle

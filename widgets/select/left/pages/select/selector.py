@@ -9,11 +9,11 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, GLib
 
+from . import filter_button_box
 from . import genre_button
 from .recordingselector import RecordingSelector
 from .trackselector import TrackSelector
 from .alphabetscroller import AlphabetScroller
-from .filterbutton import FilterButtonBox
 from common.config import config
 from common.connector import register_connect_request
 from common.connector import getattr_from_obj_with_name
@@ -41,7 +41,6 @@ class Selector(Gtk.Grid):
         selector_hbox.add(genre_button)
         self.add(selector_hbox)
 
-        self.filter_button_box = filter_button_box = FilterButtonBox()
         selector_hbox.add(filter_button_box)
 
         filter_button_box.connect('filter-button-created',
@@ -131,50 +130,48 @@ class Selector(Gtk.Grid):
         register_connect_request('player', 'set-started',
                 self.on_set_started)
 
-        self.allocation_height = 0
+        self.allocation_height = self.allocation_width = 0
 
     def on_recording_selector_size_allocate(self, widget, allocation):
-        # If the height has not actually changed, do nothing.
-        if allocation.height == self.allocation_height:
-            return
+        genre = genre_button.genre
 
-        self.allocation_height = allocation.height
+        if allocation.width != self.allocation_width:
+            column_widths = self.recording_selector.view.get_column_widths()
+            self.update_config(genre, 'column widths', column_widths)
 
-        # If there is no selection, then scrolling is unnecessary.
-        model, treeiter = self.recording_selection.get_selected()
-        if treeiter is None:
-            return
+        if allocation.height != self.allocation_height:
+            # If there is no selection, then scrolling is unnecessary.
+            model, treeiter = self.recording_selection.get_selected()
+            if treeiter is None:
+                return
 
-        # After the track selector opens, the height of the recording
-        # selector is less than the height of the paned. Wait until
-        # that condition is True before scrolling the selection.
-        paned_allocation = self.paned.get_allocation()
-        if allocation.height < paned_allocation.height:
-            self.scroll_selection()
+            # After the track selector opens, the height of the recording
+            # selector is less than the height of the paned. Wait until
+            # that condition is True before scrolling the selection.
+            paned_allocation = self.paned.get_allocation()
+            if allocation.height < paned_allocation.height:
+                self.scroll_selection()
 
     def do_destroy(self):
         genre = genre_button.genre
         self.on_genre_changing(genre_button, genre)
 
     def on_genre_changing(self, genre_button, genre):
-        self.save_configuration(genre)
+        column_widths = self.recording_selector.view.get_column_widths()
+        self.update_config(genre, 'column widths', column_widths)
 
     def on_column_widths_changed(self, recording_view, widths):
         genre = genre_button.genre
-        self.save_configuration(genre)
+        column_widths = self.recording_selector.view.get_column_widths()
+        self.update_config(genre, 'column widths', column_widths)
 
-    def save_configuration(self, genre):
-        new_column_widths = self.recording_selector.view.get_column_widths()
-        with config.modify('column widths') as column_widths:
-            column_widths[genre] = new_column_widths
-
-        new_filter_config = self.filter_button_box.get_config()
-        with config.modify('filter config') as filter_config:
-            filter_config[genre] = new_filter_config
+    def update_config(self, genre, key, new_value):
+        with config.modify(key) as value:
+            value[genre] = new_value
 
     def on_genre_changed(self, genre_button, genre):
         model, treeiter = self.recording_selector.view.selection.get_selected()
-        self.filter_button_box.clear()
+        filter_button_box.clear()
         self.hide_track_window()
 
         # Configure the filter buttons after all handlers for genre-changed
@@ -185,7 +182,6 @@ class Selector(Gtk.Grid):
         # Set filter buttons to their first menuitem only when responding
         # to a manual change in genre. Perform this test only if any
         # button is visible.
-        filter_button_box = self.filter_button_box
         if any(filter_button_box):
             for button in filter_button_box:
                 button.set_label_to_first_menuitem()
@@ -209,10 +205,20 @@ class Selector(Gtk.Grid):
         view.on_filter_button_created(filterbuttonbox, button)
         self.update_filter_button_menus(filterbuttonbox)
 
+        genre = genre_button.genre
+        new_filter_config = filter_button_box.get_config()
+        with config.modify('filter config') as filter_config:
+            filter_config[genre] = new_filter_config
+
     def on_filter_button_deactivated(self, filterbuttonbox, column_index):
         self.update_filter_button_menus(filterbuttonbox)
         view = self.recording_selector.view
         view.on_filter_button_deactivated(filterbuttonbox, column_index)
+
+        genre = genre_button.genre
+        new_filter_config = filter_button_box.get_config()
+        with config.modify('filter config') as filter_config:
+            filter_config[genre] = new_filter_config
 
     def on_filter_button_activated(self, filterbuttonbox):
         self.update_filter_button_menus(filterbuttonbox)
@@ -343,15 +349,14 @@ class Selector(Gtk.Grid):
             return
 
         # Set the filters to assure that the recording will be visible.
-        buttons = {button.index: button
-                for button in self.filter_button_box}
+        buttons = {button.index: button for button in filter_button_box}
         for index, val in enumerate(short):
             # If there is a button for this column index, then set its
             # label to the first name in val.
             if button := buttons.get(index, None):
                 button.label = val[0]
 
-        self.update_filter_button_menus(self.filter_button_box)
+        self.update_filter_button_menus(filter_button_box)
 
         # Select and scroll recording.
         model = self.recording_selector.model
@@ -459,14 +464,13 @@ class Selector(Gtk.Grid):
         row_iter, _ = self.get_short_by_uuid(uuid, work_num)
 
         # Set the filters to assure that the recording will be visible.
-        buttons = {button.index: button
-                for button in self.filter_button_box}
+        buttons = {button.index: button for button in filter_button_box}
         for index, val in enumerate(work_short_new):
             # If there is a button for this column index, then set its
             # label to the first name in val.
             if button := buttons.get(index, None):
                 button.label = val[0]
-        self.update_filter_button_menus(self.filter_button_box)
+        self.update_filter_button_menus(filter_button_box)
 
         # Select and scroll the new recording.
         new_iter = model.convert_child_iter_to_iter(row_iter)
@@ -509,7 +513,7 @@ class Selector(Gtk.Grid):
 
         # Update the filter button menus as the content of the columns
         # might have changed.
-        self.update_filter_button_menus(self.filter_button_box)
+        self.update_filter_button_menus(filter_button_box)
 
         with stop_emission(self.recording_selection, 'changed'):
             self.recording_selection.unselect_all()

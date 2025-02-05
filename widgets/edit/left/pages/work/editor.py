@@ -22,9 +22,11 @@ from common.utilities import debug
 from ripper import ripper
 from widgets import options_button
 from widgets.genrebutton import GenreButton
+from widgets.select.left.pages.select import filter_button_box
 from .abbreviators import abbreviator
-from .group import WorkMetadataGroup, NonceWorkMetadataGroup
 from .fields import Entry, NonceWorkMetadataField
+from .group import WorkMetadataGroup, NonceWorkMetadataGroup
+
 
 class WorkMetadataEditor(Gtk.ScrolledWindow):
     """The WorkMetadataEditor is a Scrolledwindow containing a box with
@@ -97,6 +99,11 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         options_button.connect_menuitem('Edit', 'Clear',
                 self.on_options_edit_clear_activate)
 
+        filter_button_box.connect('filter-button-deactivated',
+                self.on_filter_buttons_reconfigured)
+        filter_button_box.connect('filter-button-created',
+                self.on_filter_buttons_reconfigured)
+
         # Identify the widgets whose sensitivity is affected by set_sensitive.
         # genre_button is not in the list, so it remains sensitive when the
         # rest of the form is not.
@@ -118,6 +125,34 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         return chain.from_iterable(group.keys()
                 for group in self.metadata_groups.values()
                     if group.get_visible())
+
+    # If self changes width, set a new width for the short entries of the
+    # last field in the primary group (which correspond to the last column
+    # in select mode).
+    def do_size_allocate(self, allocation):
+        # It is not possible to adjust the widths of short entries in
+        # edit mode, so the widths are always the same as the widths of
+        # the corresponding columns in select mode, and those widths always
+        # get written to config whenever they change, so the values in config
+        # are always valid here.
+        #
+        # Sum the widths of all but the last column, but exclude any
+        # columns represented by a filter button.
+        widths = config['column widths'][self.edit_genre][:-1]
+        first_cols_width = sum(w for i, w in enumerate(widths)
+                if i not in config['filter config'][self.edit_genre])
+        new_width = allocation.width - first_cols_width + 25
+        if new_width > 0:
+            primary_group = self.metadata_groups['primary']
+            primary_group.set_last_field_short_entry_width(new_width)
+
+            # The main window changed size so the size of the last column
+            # changed size, so update config.
+            widths.append(new_width)
+            with config.modify('column widths') as column_widths:
+                column_widths[self.edit_genre] = widths
+
+        Gtk.ScrolledWindow.do_size_allocate(self, allocation)
 
     def on_abort_button_clicked(self, button):
         if ripper.disc_num == 0 and not ripper.rerip:
@@ -189,6 +224,9 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
     def on_work_metadata_group_changed(self, group):
         self.primary_is_complete = bool(self.metadata_groups['primary'])
         self._work_metadata_changed = True
+
+    def on_filter_buttons_reconfigured(self, filterbuttonbox, column_index):
+        self.queue_resize()
 
     # Initialize the editor with metadata fields whose keys correspond
     # to the genre but with empty values. Do not prepare a group for
@@ -470,7 +508,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         # Currently, only three keys might be interested in the content
         # of the album metadata.
         new_names = []
-        for name in mb_metadata['album']:
+        for name in mb_metadata.get('album', ['']):
             # Standardize the formatting of the album metadata.
             if mo := re.match(r'[Ss]ymphony\D+(\d+)', name):
                 name = f'Symphony No. {mo.group(1)}'

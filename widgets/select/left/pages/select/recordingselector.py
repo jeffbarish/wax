@@ -398,6 +398,7 @@ class RecordingView(Gtk.TreeView):
         if fixed_width + 20 > allocation.width:
             for col in columns:
                 col.set_fixed_width(-1)
+        self.queue_resize()
 
         # If there is a selection, scroll it into view.
         model_filter, treeiter = self.selection.get_selected()
