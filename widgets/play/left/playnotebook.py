@@ -27,9 +27,6 @@ class PlayNotebook(Gtk.Notebook):
         super().__init__()
         self.set_name('play-notebook')
 
-        self.connect('realize', self.on_playnotebook_realize)
-        self.connect('key-press-event', self.on_key_press_event)
-
         # pages will map the name of the page to the page.
         self.pages = pages = {}
 
@@ -49,10 +46,12 @@ class PlayNotebook(Gtk.Notebook):
         register_connect_request('selector.recording_selection', 'changed',
                 self.on_recording_selection_changed)
 
-    def on_playnotebook_realize(self, playnotebook):
+    def do_realize(self):
         self.grab_focus()
 
-    def on_key_press_event(self, playnotebook, eventkey):
+        Gtk.Notebook.do_realize(self)
+
+    def do_key_press_event(self, eventkey):
         if eventkey.type == Gdk.EventType.KEY_PRESS:
             success, value = eventkey.get_keyval()
             match value:
@@ -61,6 +60,8 @@ class PlayNotebook(Gtk.Notebook):
                 case Gdk.KEY_Page_Up:
                     self.emit('page', True)
             GLib.idle_add(self.grab_focus)
+
+        Gtk.Notebook.do_key_press_event(self, eventkey)
 
     @idle_add
     def on_recording_selection_changed(self, selection):

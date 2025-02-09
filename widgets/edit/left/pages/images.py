@@ -437,7 +437,6 @@ class Image(Gtk.Image):
     def __init__(self):
         super().__init__()
         self.set_vexpand(True)
-        self.connect('size-allocate', self.on_size_allocate)
         self.min_nat_size = (300, 300)
         self.show()
 
@@ -476,7 +475,9 @@ class Image(Gtk.Image):
         return pb.scale_simple(scaled_width, scaled_height,
                 GdkPixbuf.InterpType.BILINEAR)
 
-    def on_size_allocate(self, image, allocation):
+    def do_size_allocate(self, allocation):
+        Gtk.Image.do_size_allocate(self, allocation)
+
         width, height = (allocation.width, allocation.height)
         self.set_from_pixbuf(self.scale_at_size(self.pb, width, height))
 

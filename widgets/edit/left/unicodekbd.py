@@ -35,7 +35,6 @@ class UnicodeKbd(Gtk.Window):
         super().__init__()
         self.set_name('unicode-kbd')
         self.set_title('Wax Unicode keyboard')
-        self.connect('delete-event', self.on_close_button_clicked)
 
         self.clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
 
@@ -65,13 +64,13 @@ class UnicodeKbd(Gtk.Window):
 
         self.add(grid)
 
-    def on_realize(self, edit_metadata_notebook):
-        self.gdk_window = edit_metadata_notebook.get_window()
-
-    def on_close_button_clicked(self, button, event):
+    def do_delete_event(self, event):
         self.position = self.get_position()
         self.hide()
         return True
+
+    def on_realize(self, edit_metadata_notebook):
+        self.gdk_window = edit_metadata_notebook.get_window()
 
     # ctrl-k typed either to the main window (in edit mode) or the
     # unicode keyboard toggles the visibility of the unicode keyboard.

@@ -112,11 +112,6 @@ class TrackView(Gtk.TreeView):
 
         self.create_trk_treeview()
 
-        self.connect('row-expanded', self.on_trk_row_expanded)
-        self.connect('row-collapsed', self.on_trk_row_collapsed)
-        self.connect('test-collapse-row',
-                self.on_trk_treeview_test_collapse_row)
-
         self.selection = selection = self.get_selection()
         selection.set_mode(Gtk.SelectionMode.MULTIPLE)
         selection.connect('changed', self.on_selection_changed)
@@ -134,6 +129,54 @@ class TrackView(Gtk.TreeView):
         model = self.get_model()
         path = model.get_path(arg)
         return path[-1]
+
+    # After expanding a parent, select its child tracks according to
+    # self.child_selections.
+    def do_row_expanded(self, treeiter, treepath):
+        model = self.get_model()
+        for child in model[treeiter].iterchildren():
+            parent_index = self.get_index(treepath)
+            child_index = self.get_index(child)
+            is_selected = self.child_selections[parent_index][child_index]
+            self.set_child_selection(child.iter, is_selected)
+            if is_selected:
+                with stop_emission(self.selection, 'changed'):
+                    self.selection.select_path(treepath)
+
+    def do_row_collapsed(self, treeiter, treepath):
+        # After the row is collapsed, unselect the parent if all children
+        # are not selected.
+        parent_index = self.get_index(treepath)
+        if not any(self.child_selections[parent_index]):
+            with stop_emission(self.selection, 'changed'):
+                self.selection.unselect_iter(treeiter)
+
+        # Also affirm the selection of all children (although only those in
+        # uncollapsed groups are visible).
+        model = self.get_model()
+        for parent_index, child_selections in self.child_selections.items():
+            if any(child_selections):
+                parent = model[parent_index]
+                with stop_emission(self.selection, 'changed'):
+                    self.selection.select_iter(parent.iter)
+                    for i, child in enumerate(parent.iterchildren()):
+                        if child_selections[i]:
+                            self.selection.select_iter(child.iter)
+                        else:
+                            self.selection.unselect_iter(child.iter)
+
+    # Keep track of row selections so that we can restore the selections
+    # at appropriate points (e.g., when we expand the row again).
+    def do_test_collapse_row(self, treeiter, treepath):
+        model, self.pre_collapse_selection = self.selection.get_selected_rows()
+        parent_index = self.get_index(treepath)
+        self.child_selections[parent_index] = [
+                self.selection.path_is_selected(child.path)
+                        for child in model[treepath].iterchildren()]
+
+        # Simple rows are neither parent nor child.
+        self.simple_selections = [self.selection.path_is_selected(row.path)
+                for row in model if not model.iter_has_child(row.iter)]
 
     def create_trk_treeview(self):
         title_index = TrackTuple._fields.index('title')
@@ -176,54 +219,6 @@ class TrackView(Gtk.TreeView):
                 for row in model if not model.iter_has_child(row.iter)]
 
         self.selection.select_all()
-
-    # After expanding a parent, select its child tracks according to
-    # self.child_selections.
-    def on_trk_row_expanded(self, treeview, treeiter, treepath):
-        model = self.get_model()
-        for child in model[treeiter].iterchildren():
-            parent_index = self.get_index(treepath)
-            child_index = self.get_index(child)
-            is_selected = self.child_selections[parent_index][child_index]
-            self.set_child_selection(child.iter, is_selected)
-            if is_selected:
-                with stop_emission(self.selection, 'changed'):
-                    self.selection.select_path(treepath)
-
-    # Keep track of row selections so that we can restore the selections
-    # at appropriate points (e.g., when we expand the row again).
-    def on_trk_treeview_test_collapse_row(self, treeview, treeiter, treepath):
-        model, self.pre_collapse_selection = self.selection.get_selected_rows()
-        parent_index = self.get_index(treepath)
-        self.child_selections[parent_index] = [
-                self.selection.path_is_selected(child.path)
-                        for child in model[treepath].iterchildren()]
-
-        # Simple rows are neither parent nor child.
-        self.simple_selections = [self.selection.path_is_selected(row.path)
-                for row in model if not model.iter_has_child(row.iter)]
-
-    def on_trk_row_collapsed(self, treeview, treeiter, treepath):
-        # After the row is collapsed, unselect the parent if all children
-        # are not selected.
-        parent_index = self.get_index(treepath)
-        if not any(self.child_selections[parent_index]):
-            with stop_emission(self.selection, 'changed'):
-                self.selection.unselect_iter(treeiter)
-
-        # Also affirm the selection of all children (although only those in
-        # uncollapsed groups are visible).
-        model = self.get_model()
-        for parent_index, child_selections in self.child_selections.items():
-            if any(child_selections):
-                parent = model[parent_index]
-                with stop_emission(self.selection, 'changed'):
-                    self.selection.select_iter(parent.iter)
-                    for i, child in enumerate(parent.iterchildren()):
-                        if child_selections[i]:
-                            self.selection.select_iter(child.iter)
-                        else:
-                            self.selection.unselect_iter(child.iter)
 
     @emission_stopper('changed')
     def on_selection_changed(self, selection):

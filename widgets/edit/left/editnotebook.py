@@ -191,15 +191,17 @@ class EditNotebook(Gtk.Notebook):
 
             options_button.sensitize_menuitem('Edit', 'Delete', False)
 
-        self.revise_mode = False
+            self.emit('recording-deleted', self.recording.uuid)
+        else:
+            # work-deleted triggers deletion of the work in selector.
+            # model.recording does not change until the work is deleted.
+            # clear_or_repopulate_from_selection examines model.recording
+            # to decide whether to clear or repopulate. Consequently, the
+            # work must be deleted before clear_or_repopulate_from_selection.
+            self.emit(
+                'work-deleted', work.genre, self.recording.uuid, self.work_num)
 
-        # work-deleted triggers deletion of the work in selector.
-        # model.recording does not change until the work is deleted.
-        # clear_or_repopulate_from_selection examines model.recording
-        # to decide whether to clear or repopulate. Consequently, the
-        # work must be deleted before clear_or_repopulate_from_selection.
-        self.emit(
-            'work-deleted', work.genre, self.recording.uuid, self.work_num)
+        self.revise_mode = False
 
         # Wait for the work-deleted handler in selector to run.
         GLib.idle_add(self.clear_or_repopulate_from_selection)

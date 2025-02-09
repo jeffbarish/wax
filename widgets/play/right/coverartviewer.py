@@ -30,8 +30,6 @@ class CoverArtViewer(Gtk.EventBox):
         register_connect_request('edit-left-notebook', 'recording-saved',
                 self.on_recording_saved)
 
-        self.connect('button-press-event', self.on_button_press_event)
-
     def on_recording_saved(self, editnotebook, genre):
         uuid = editnotebook.recording.uuid
         self.get_images(uuid)
@@ -64,7 +62,7 @@ class CoverArtViewer(Gtk.EventBox):
 
         self.image.set_from_pixbuf(self.scaled_pixbufs[0])
 
-    def on_button_press_event(self, coverartviewer, eventbutton):
+    def do_button_press_event(self, eventbutton):
         n_images = len(self.scaled_pixbufs)
         if n_images <= 1:
             return
@@ -77,6 +75,8 @@ class CoverArtViewer(Gtk.EventBox):
             elif eventbutton.x < 0.2 * WIDTH:
                 self.scaled_pixbufs.insert(0, self.scaled_pixbufs.pop())
             self.image.set_from_pixbuf(self.scaled_pixbufs[0])
+
+        Gtk.EventBox.do_button_press_event(self, eventbutton)
 
     def scale_image(self, pb):
         # Hardwire image size as self might not be allocated the first time

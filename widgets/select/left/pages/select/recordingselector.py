@@ -362,7 +362,6 @@ class RecordingView(Gtk.TreeView):
         self.set_hexpand(True)
         self.column_pool = []
         self.selection = self.get_selection()
-        self.connect('button-release-event', self.on_release)
 
         self.cell = Gtk.CellRendererText()
         self.cell.set_property('ellipsize', Pango.EllipsizeMode.END)
@@ -378,6 +377,13 @@ class RecordingView(Gtk.TreeView):
         # does not seem to matter what value I put here.
         minimum_width = natural_width = 100
         return (minimum_width, natural_width)
+
+    def do_button_release_event(self, event):
+        if self._column_widths_changing:
+            self._column_widths_changing = False
+
+            widths = self.get_column_widths()
+            self.emit('column-widths-changed', widths)
 
     def on_filter_button_created(self, filterbuttonbox, button):
         # If there is a selection, configure the new filter button to
@@ -490,13 +496,6 @@ class RecordingView(Gtk.TreeView):
     # user releases the mouse button.
     def on_column_width(self, column, paramspec):
         self._column_widths_changing = True
-
-    def on_release(self, column, event):
-        if self._column_widths_changing:
-            self._column_widths_changing = False
-
-            widths = self.get_column_widths()
-            self.emit('column-widths-changed', widths)
 
     def get_column_widths(self):
         # If the column never appeared (it was always represented by a filter

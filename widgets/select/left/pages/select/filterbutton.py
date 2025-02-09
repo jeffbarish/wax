@@ -80,14 +80,13 @@ class FilterButtonBox(Gtk.Box):
                 Gtk.DestDefaults.ALL,
                 [Gtk.TargetEntry.new('column', Gtk.TargetFlags.SAME_APP, 0)],
                 Gdk.DragAction.COPY)
-        self.connect('drag-data-received', self.on_drag_data_received)
 
     # Interate over visible buttons.
     def __iter__(self):
         return (button for button in self.get_children()
                 if button.props.visible)
 
-    def on_drag_data_received(self, widget, drag_context,
+    def do_drag_data_received(self, drag_context,
                 x, y, data, info, time):
         index = pickle.loads(data.get_data())
         button = self.show_button(index)

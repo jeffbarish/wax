@@ -76,7 +76,7 @@ class Chamber(Main):
         if trackgroup_title:
             return f'{trackgroup_title}: {title}'
         else:
-            return f'{first_in_group(self.metadata_short['work'])}: {title}'
+            return f'{first_in_group(self.metadata_short["work"])}: {title}'
 
 @dataclass
 class Concerto(Main):

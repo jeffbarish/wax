@@ -136,10 +136,14 @@ class Selector(Gtk.Grid):
         genre = genre_button.genre
 
         if allocation.width != self.allocation_width:
+            self.allocation_width = allocation.width
+
             column_widths = self.recording_selector.view.get_column_widths()
             self.update_config(genre, 'column widths', column_widths)
 
         if allocation.height != self.allocation_height:
+            self.allocation_height = allocation.height
+
             # If there is no selection, then scrolling is unnecessary.
             model, treeiter = self.recording_selection.get_selected()
             if treeiter is None:
@@ -170,7 +174,6 @@ class Selector(Gtk.Grid):
             value[genre] = new_value
 
     def on_genre_changed(self, genre_button, genre):
-        model, treeiter = self.recording_selector.view.selection.get_selected()
         filter_button_box.clear()
         self.hide_track_window()
 
@@ -317,7 +320,18 @@ class Selector(Gtk.Grid):
 
     # Set the selection either from a playqueue selection (above), a
     # search result, or a newly created recording (on_save_button_clicked
-    # in editnotebook).
+    # in editnotebook). The playqueue_select selection changes either when
+    # the user clicks on a set or when play advances from one set to the next
+    # in the queue. finish_set_selection sets the recording selection. The
+    # changed signal on that selection triggers updates in playnotebook,
+    # coverartviewer, and editnotebook all of which require the recording
+    # model to have updated first. Accordingly, the selection is performed
+    # in a stop_emission context to defer the updates until an explicit
+    # call to the appropriate handlers. In the meantime, read_long_metadata
+    # gets called on the model to update long metadata, and short metadata
+    # gets updated in response to genre-changed, which was emitted by
+    # genrebutton if the genre actually changed (otherwise, the short
+    # model is already current).
     def set_selection(self, new_genre, uuid, work_num, tracks):
         # The handler for genre-changed sets the filter buttons to their first
         # menuitem, but code in finish_set_selection sets the buttons correctly
@@ -327,9 +341,12 @@ class Selector(Gtk.Grid):
         if new_genre != genre_button.genre:
             genre_button.set_genre(new_genre)
 
-            self.on_genre_changed(genre_button, new_genre)
+            filter_button_box.clear()
+            self.hide_track_window()
 
             self.recording_selector.on_genre_changed(genre_button, new_genre)
+
+            self.finish_on_genre_changed(new_genre)
 
             work_editor = getattr_from_obj_with_name('edit-work-page')
             work_editor.on_select_genre_changed(genre_button, new_genre)
@@ -358,7 +375,8 @@ class Selector(Gtk.Grid):
 
         self.update_filter_button_menus(filter_button_box)
 
-        # Select and scroll recording.
+        # Select and scroll recording. Three handlers for the changed signal
+        # that need to be executed get called explicitly below.
         model = self.recording_selector.model
         model.read_long_metadata(row_iter)
         treeiter = model.convert_child_iter_to_iter(row_iter)

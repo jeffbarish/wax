@@ -474,9 +474,16 @@ class Entry(Gtk.Entry):
         self.set_width_chars(0)
         self.pageupdown_cb = pageupdown_cb
         self.connect('changed', self.on_changed)
-        self.connect('realize', self.on_realize)
         self.field = field
         self.set_can_focus(False)
+
+    # After starting wax, this widget gets focus. As it has not yet been
+    # exposed, it is not realized. As a result, pressing any key generates
+    # a critical error. To avoid this problem, I set can-focus to False and
+    # then fix it here after the widget has been realized.
+    def do_realize(self):
+        self.set_can_focus(True)
+        Gtk.Entry.do_realize(self)
 
     def do_key_press_event(self, eventkey):
         match eventkey.keyval:
@@ -565,13 +572,6 @@ class Entry(Gtk.Entry):
     def on_changed(self, entry):
         if hasattr(self, 'clear_item'):
             self.clear_item.set_sensitive(bool(self.props.text))
-
-    # After starting wax, this widget gets focus. As it has not yet been
-    # exposed, it is not realized. As a result, pressing any key generates
-    # a critical error. To avoid this problem, I set can-focus to False and
-    # then fix it here after the widget has been realized.
-    def on_realize(self, widget):
-        self.set_can_focus(True)
 
     def on_clear_activated(self, menuitem):
         super().set_text('')

@@ -21,14 +21,12 @@ class RawMetadata(Gtk.TextView):
         text_buffer.create_tag('fg_color', foreground='#6683D9')
         text_buffer.create_tag('key_font', font='monospace-condensed 9')
 
-        self.connect('button-release-event', self.on_button_release_event)
-
         options_button.connect_menuitem('Edit', 'Clear',
                 self.on_options_edit_clear_activate)
 
         self.show()
 
-    def on_button_release_event(self, textview, event):
+    def do_button_release_event(self, event):
         text_buffer = self.text_buffer
         if text_buffer.get_has_selection():
             leftiter, rightiter = text_buffer.get_selection_bounds()
