@@ -433,9 +433,14 @@ class Playqueue(Gtk.Box):
         total_duration_str = make_time_str(total_duration)
         self.playqueue_total_duration_value.set_text(total_duration_str)
 
-    def select_last_set(self):
+    def scroll_last_set(self):
         last_row = playqueue_model[-1]
-        self.playqueue_treeselection.select_iter(last_row.iter)
         self.playqueue_treeview.scroll_to_cell(
                 last_row.path, None, False, 0.0, 0.0)
+
+    def select_first_set(self):
+        first_row = playqueue_model[0]
+        self.playqueue_treeview.scroll_to_cell(
+                first_row.path, None, False, 0.0, 0.0)
+        self.playqueue_treeselection.select_iter(first_row.iter)
 

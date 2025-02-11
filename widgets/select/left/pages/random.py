@@ -84,6 +84,7 @@ class Random(Gtk.ScrolledWindow):
         def queue_random_selection():
             nonlocal duration
             if duration <= 0:
+                playqueue_select.select_first_set()
                 return False
 
             # Pick a genre randomly according to random config.
@@ -121,7 +122,7 @@ class Random(Gtk.ScrolledWindow):
                 duration -= track.duration
             playqueue_select.enqueue_recording(random_genre, recording,
                     work_num, play_tracks)
-            playqueue_select.select_last_set()
+            playqueue_select.scroll_last_set()
 
             return True
 
