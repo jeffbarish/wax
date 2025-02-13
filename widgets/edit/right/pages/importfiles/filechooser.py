@@ -200,7 +200,7 @@ class FileChooser(Gtk.Box):
                 treeselection = self.file_chooser_treeselection
                 with stop_emission(treeselection, 'changed'):
                     treeselection.unselect_all()
-                    treeselection.select_path(row_path)
+                treeselection.select_path(row_path)
                 return True
 
     @Gtk.Template.Callback()
@@ -265,6 +265,7 @@ class FileChooser(Gtk.Box):
 
         with monitor_stop_emission(self.monitor):
             oldpath.rename(target)
+        doublebutton.config(None, True, False)
 
     @Gtk.Template.Callback()
     def on_file_chooser_filenames_cellrenderertext_editing_canceled(self,
@@ -417,6 +418,7 @@ class FileChooser(Gtk.Box):
                 self.file_chooser_liststore.append(row)
 
         self.file_chooser_delete_button.set_sensitive(False)
+        doublebutton.config(None, False, False)
 
     # Used by importfiles.import_.
     def unselect_all(self):

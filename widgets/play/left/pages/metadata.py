@@ -8,6 +8,7 @@ from gi.repository import Gtk, GLib, Pango
 
 from common.connector import register_connect_request
 from common.decorators import idle_add
+from common.decorators import emission_stopper
 from common.utilities import debug
 from widgets.select.right import playqueue_model_with_attrs as playqueue_model
 from widgets.select.right import select_right as playqueue_select
@@ -130,6 +131,7 @@ class MetadataView(Gtk.Grid):
     def on_playqueue_model_row_inserted(self, model, path, treeiter):
         self.set_next_button.props.sensitive = (len(model) > 1)
 
+    @emission_stopper()
     def on_playqueue_model_row_deleted(self, model, path):
         self.track_metadata_liststore.clear()
 

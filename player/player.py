@@ -216,6 +216,11 @@ class Player(GObject.Object):
 
     @reply
     def on_track_finished(self, n_tracks, *trackid):
+        # track-finished goes to metadata, playqueue, and selector. In
+        # playqueue, it updates play_tracks in the set and the display
+        # of durations. In metadata, it desensitizes the next track button
+        # if there are no more tracks. In selector, it unselects the track
+        # that just played.
         self.emit('track-finished', n_tracks, trackid,
                 self.uuid, self.work_num)
 

@@ -586,21 +586,32 @@ class Selector(Gtk.Grid):
         # progresses.
         self.track_selector.view.scroll_playing_track(tracktuple.track_id)
 
+    # Unselect the track that just played, but only if the display in
+    # selector is consistent with the current set.
     def on_track_finished(self, player, n_tracks, track_id, uuid, work_num):
         model = self.recording_selector.model
+
+        # No recording is selected.
+        if model.recording is None:
+            return
+
+        # A different recording is selected.
         if (uuid, work_num) != (model.recording.uuid, model.work_num):
             return
 
-        # If the first set in the play queue is selected, then the recording
-        # in selector is the one that is playing. Otherwise, do nothing here.
+        # No set is selected, so whatever is being displayed in selector
+        # does not correspond to what just played.
         selection = playqueue_select.playqueue_treeselection
         model, treeiter = selection.get_selected()  # model is playqueue_model
         if treeiter is None:
-            return  # No set is selected.
+            return
 
+        # The set in the play position (first) is not selected, so whatever
+        # is being displayed in selector still does not correspond to what
+        # just played.
         treepath = model.get_path(treeiter)
         if treepath != Gtk.TreePath.new_first():
-            return  # The set in the play position (first) is not selected.
+            return
 
         self.track_selector.view.unselect_track(track_id)
 

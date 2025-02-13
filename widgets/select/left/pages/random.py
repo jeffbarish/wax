@@ -84,7 +84,7 @@ class Random(Gtk.ScrolledWindow):
         def queue_random_selection():
             nonlocal duration
             if duration <= 0:
-                playqueue_select.select_first_set()
+                playqueue_select.select_and_scroll_first_set()
                 return False
 
             # Pick a genre randomly according to random config.
@@ -128,6 +128,7 @@ class Random(Gtk.ScrolledWindow):
 
         duration = self.random_duration_adjustment.props.value * 60.0 * 60.0
         queue_random_selection()
+        playqueue_select.select_and_scroll_first_set()
         GLib.timeout_add(500, queue_random_selection)
 
 

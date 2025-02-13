@@ -148,7 +148,8 @@ class Playqueue(Gtk.Box):
         # that engine is sending, which results in a KeyError. To
         # avoid this problem, delete from the end of playqueue_model
         # so that player is never tempted to initiate play.
-        with stop_emission(self.playqueue_treeselection, 'changed'):
+        with stop_emission(self.playqueue_treeselection, 'changed'), \
+                stop_emission(playqueue_model, 'row-deleted'):
             for row in reversed(playqueue_model):
                 playqueue_model.remove(row.iter)
         self.playqueue_durations_box.hide()
@@ -171,6 +172,10 @@ class Playqueue(Gtk.Box):
         if len(model):
             self._display_total_duration()
             self.playqueue_durations_box.show_all()
+
+            # Select the new first set.
+            first_set = playqueue_model_with_attrs[0]
+            self.playqueue_treeselection.select_iter(first_set.iter)
         else:
             self.playqueue_durations_box.hide()
 
@@ -433,12 +438,13 @@ class Playqueue(Gtk.Box):
         total_duration_str = make_time_str(total_duration)
         self.playqueue_total_duration_value.set_text(total_duration_str)
 
+    # The next two methods are called from random when generating a queue.
     def scroll_last_set(self):
         last_row = playqueue_model[-1]
         self.playqueue_treeview.scroll_to_cell(
                 last_row.path, None, False, 0.0, 0.0)
 
-    def select_first_set(self):
+    def select_and_scroll_first_set(self):
         first_row = playqueue_model[0]
         self.playqueue_treeview.scroll_to_cell(
                 first_row.path, None, False, 0.0, 0.0)
