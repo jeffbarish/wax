@@ -50,8 +50,8 @@ class DocsView(Gtk.Box):
 
         if treeiter is not None:
             filename, uuid = model[treeiter]
-            filename = Path(DOCUMENTS, uuid, filename).absolute().as_uri()
-            self.pdf_viewer.set_doc(filename)
+            filepath = Path(DOCUMENTS, uuid, filename)
+            self.pdf_viewer.set_doc(filepath)
             self.pdf_viewer.show_all()
 
     @Gtk.Template.Callback()

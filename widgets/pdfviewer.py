@@ -1,12 +1,16 @@
 """A viewer and a treemodel for acquiring documents. Used by docs in
 edit mode and docs in play mode."""
 
+from pathlib import Path
+
 import gi
 gi.require_version('Gtk', '3.0')
+gi.require_version('GLib', '2.0')
 gi.require_version('Poppler', '0.18')
-from gi.repository import Gtk, Poppler
+from gi.repository import Gtk, GLib, Poppler
 
 from common.decorators import UniqObjectName
+from common.initlogging import logger
 from common.utilities import debug
 
 # Gtk.ListStore cannot store binary data (the data in the PDF file), so
@@ -83,8 +87,9 @@ class PdfViewer(Gtk.EventBox):
 
         self.page.render(context)
 
-    def set_doc(self, filename):
-        self.document = Poppler.Document.new_from_file(filename, None)
+    def set_doc(self, filepath):
+        fileuri = filepath.absolute().as_uri()
+        self.document = Poppler.Document.new_from_file(fileuri, None)
         self.n_pages = self.document.get_n_pages()
 
         self.page_num = 0

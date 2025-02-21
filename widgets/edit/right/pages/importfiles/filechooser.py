@@ -10,7 +10,7 @@ import sys
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GLib, Gio, Gdk, Pango
+from gi.repository import Gtk, GLib, Gio, Gdk, Pango, Poppler, GdkPixbuf
 
 from mutagen import File
 from mutagen import MutagenError
@@ -23,7 +23,6 @@ from common.constants import SND_EXT, JPG_EXT, PDF_EXT
 from common.contextmanagers import signal_blocker
 from common.contextmanagers import stop_emission
 from common.decorators import emission_stopper
-from common.initlogging import logger
 from common.utilities import debug
 from common.utilities import make_time_str
 from ripper import ripper
@@ -110,12 +109,18 @@ class FileChooser(Gtk.Box):
                 self.on_options_edit_clear_activate)
 
         def func(column, cell, model, treeiter, user):
-            val = model.get_value(treeiter, 3)
-            style = (Pango.Style.ITALIC, Pango.Style.NORMAL)[int(val)]
-            cell.set_property('style', style)
+            gray = Gdk.RGBA(0.6, 0.6, 0.6, 1.0)
+            white = Gdk.RGBA(0.9, 0.9, 0.9, 1.0)
+            valid = model.get_value(treeiter, 3)
+            cell.set_property('foreground-rgba', (gray, white)[valid])
         treeviewcolumn = self.file_chooser_filenames_treeviewcolumn
         cellrenderertext = self.file_chooser_filenames_cellrenderertext
         treeviewcolumn.set_cell_data_func(cellrenderertext, func)
+
+        def func(selection, model, path, path_currently_selected, *data):
+            name, duration, isdir, valid = model[path]
+            return valid
+        self.file_chooser_treeselection.set_select_function(func)
 
         ripper.connect('rip-started', self.on_rip_started)
         ripper.connect('rip-finished', self.on_rip_finished)
@@ -145,6 +150,16 @@ class FileChooser(Gtk.Box):
 
     def on_context_menu_menuitem_activate(self, menuitem):
         model, treepaths = self.file_chooser_treeselection.get_selected_rows()
+
+        # If no row is selected, then the click must have been on an invalid
+        # row. In that case, the only operation permitted is Delete and
+        # self.treepaths got set with the path of the row (in
+        # on_file_chooser_treeview_button_press_event).
+        if not treepaths:
+            with signal_blocker(self.file_chooser_treeselection, 'changed'):
+                self._delete(self.treepaths)
+            return
+
         match menuitem.get_label():
             case 'Open':
                 name, duration, isdir, valid = model[treepaths[0]]
@@ -186,13 +201,30 @@ class FileChooser(Gtk.Box):
         if event.type == Gdk.EventType.BUTTON_PRESS \
                 and event.state == 0 \
                 and event.button == 3:
-            # Pop up the menu if we clicked on a row. Note that clicking on
-            # the row selects it, so we can get the row in the handler for
-            # the selection using get_selected.
+            # Pop up the menu if we clicked on a row with the right button.
+            # Note that clicking on the row even with the right button
+            # still selects it, so we can get the row in the handler for
+            # the selection (on_file_chooser_treeselection_changed) using
+            # get_selected -- unless the row is invalid. In that case,
+            # it is impossible to select it, so we save the row in
+            # self.treepaths instead.
             x, y = int(event.x), int(event.y)
             row = self.file_chooser_treeview.get_dest_row_at_pos(x, y)
             if row is not None:
                 row_path, drop_position = row
+                model = self.file_chooser_liststore
+                name, duration, isdir, valid = model[row_path]
+
+                menu_items = self.context_menu.get_children()
+                if not valid:
+                    menu_items[0].set_sensitive(False)
+                    menu_items[1].set_sensitive(False)
+                    self.treepaths = [row_path]
+                    self.file_chooser_types_label.set_text('')
+                else:
+                    for menu_item in menu_items:
+                        menu_item.set_sensitive(True)
+
                 self.context_menu.popup(None, None, None, None, event.button,
                         event.time)
 
@@ -201,6 +233,7 @@ class FileChooser(Gtk.Box):
                 with stop_emission(treeselection, 'changed'):
                     treeselection.unselect_all()
                 treeselection.select_path(row_path)
+
                 return True
 
     @Gtk.Template.Callback()
@@ -373,35 +406,31 @@ class FileChooser(Gtk.Box):
             name = str(name_fp.name)
             if name_fp.is_dir():
                 row = (name, '', True, True)
-            elif name_fp.suffix in JPG_EXT + PDF_EXT + ('.ods',):
-                row = (name, '', False, True)
+            elif name_fp.suffix in PDF_EXT:
+                fileuri = name_fp.absolute().as_uri()
+                try:
+                    Poppler.Document.new_from_file(fileuri, None)
+                except GLib.GError as e:
+                    valid = False
+                else:
+                    valid = True
+                row = (name, '', False, valid)
+            elif name_fp.suffix in JPG_EXT:
+                try:
+                    GdkPixbuf.Pixbuf.new_from_file(str(name_fp))
+                except GLib.GError as e:
+                    valid = False
+                else:
+                    valid = True
+                row = (name, '', False, valid)
             elif name_fp.suffix in ('.wav', '.flac', '.ogg', '.mp3'):
                 try:
                     snd_file = File(name_fp)
                 except MutagenError as e:
-                    message = f'Error reading header of {name_fp} ({e})'
-                    logger.error(message)
-                    duration = 0.0
-                    valid = False
-                # It is possible that remotefilechooser will attempt to
-                # list the directory while the OS is copying files into
-                # transfer.  In that case, the header might be incomplete.
-                except EOFError as e:
-                    message = f'EOFError reading header: {e}'
-                    logger.error(message)
-                    duration = 0.0
                     valid = False
                 else:
-                    # Even after all the error handling, it seems that
-                    # snd_file can still be None.
-                    try:
-                        duration = snd_file.info.length
-                    except AttributeError:
-                        duration = 0.0
-                        valid = False
-                    else:
-                        valid = True
-                row = (name, make_time_str(duration), False, valid)
+                    valid = True
+                row = (name, '', False, valid)
             else:
                 row = (name, '', False, False)
 
