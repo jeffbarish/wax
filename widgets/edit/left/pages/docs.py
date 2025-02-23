@@ -142,8 +142,7 @@ class DocsEditor(Gtk.Box):
             filename = doc_filename.removeprefix(str(TRANSFER)).lstrip('/')
             new_row = (filename, NOUUID, doc_data)
             new_iter = self.my_docs_liststore.append(new_row)
-        with signal_blocker(self.docs_treeselection, 'changed'):
-            self.docs_treeselection.select_iter(new_iter)
+        self.docs_treeselection.select_iter(new_iter)
 
     # For adding multiple doc files (see importfiles.add).
     def add_docs(self, doc_filenames):
@@ -152,8 +151,7 @@ class DocsEditor(Gtk.Box):
             filename = doc_filename.removeprefix(str(TRANSFER)).lstrip('/')
             new_row = (filename, NOUUID, doc_data)
             new_iter = self.my_docs_liststore.add(new_row)
-        with signal_blocker(self.docs_treeselection, 'changed'):
-            self.docs_treeselection.select_iter(new_iter)
+        self.docs_treeselection.select_iter(new_iter)
 
         filepath = Path(doc_filename)
         self.pdf_viewer.set_doc(filepath)
