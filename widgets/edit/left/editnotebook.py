@@ -281,6 +281,10 @@ class EditNotebook(Gtk.Notebook):
                 or docs_changed
 
     def on_select_genre_changed(self, genre_button, genre):
+        # Note that we do not permit changes if self.changed is True, but
+        # we still make a record of the new select genre.
+        self.select_genre = genre
+
         # After a user clicks Save, changed is False even though a rip
         # might still be underway. The edit genre should not track the
         # select genre as long as the rip is underway.
@@ -289,8 +293,6 @@ class EditNotebook(Gtk.Notebook):
 
         work_metadata_editor = self.pages['work'].page_widget
         work_metadata_editor.prepare(genre)
-
-        self.select_genre = genre
 
         self.clear_all_forms()
         self.set_sensitive(False)
@@ -407,23 +409,30 @@ class EditNotebook(Gtk.Notebook):
         # ongoing rip and it removes zombies (tracks that were ripped
         # but not saved). It then clears all the forms and re-selects
         # the selection in Select mode (if there is one).
-        selector = getattr_from_obj_with_name('selector')
-        model = selector.recording_selector.model
-        if model.recording is None:
+        selection = getattr_from_obj_with_name('selector.recording_selection')
+        model, treeiter = selection.get_selected()
+        # model is selector.recording_selector.model.model_filter.
+        if treeiter is None:
             self.clear_all_forms()
             self.set_sensitive(False)
             self._revise_mode = False
             self.recording = None
         else:
-            # If the user did not save the recording before clicking
-            # abort then it is still possible to go back to the original
-            # selection.
+            # If the user did not save the recording before clicking abort,
+            # clear, or delete, then go to the selected recording. Note,
+            # however, that the selected recording might not be the one that
+            # was selected on entering edit mode. It might not even be in the
+            # same genre.
             work_metadata_editor = self.pages['work'].page_widget
             if self.select_genre != work_metadata_editor.edit_genre:
-                work_metadata_editor.genre_button.genre = self.select_genre
+                # Normally, changing the edit genre is a change, but if we are
+                # preparing to repopulate (after clear, delete, or abort) then
+                # we do not want the change of genre to trigger the setting of
+                # work_metadata_changed.
+                work_metadata_editor.genre_button.set_genre(self.select_genre)
+                work_metadata_editor.edit_genre = self.select_genre
                 work_metadata_editor.prepare(self.select_genre)
 
-            selection = selector.recording_selection
             GLib.idle_add(self.populate_forms_from_selection, selection)
             self.revise_mode = True
 
