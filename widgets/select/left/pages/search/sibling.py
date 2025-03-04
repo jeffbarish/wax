@@ -128,18 +128,17 @@ class SearchSibling(Gtk.Box):
 
     @idle_add
     def select_matching_sibling(self):
+        with signal_blocker(self.sibling_treeselection, 'changed'):
+            self.sibling_liststore.clear()
+
         recording_selection = getattr_from_obj_with_name(
                 'selector.recording_selection')
         model_filter, selected_row_iter = recording_selection.get_selected()
         if selected_row_iter is None:
-            self.sibling_treeselection.unselect_all()
             return
 
         recording_model = model_filter.props.child_model
         self.recording = recording = recording_model.recording
-
-        with signal_blocker(self.sibling_treeselection, 'changed'):
-            self.sibling_liststore.clear()
 
         # When responding to a change in selection (recording, playqueue,
         # or incremental), matching is agnostic to track selection. However,
@@ -159,8 +158,7 @@ class SearchSibling(Gtk.Box):
                 row = (thumbnail_pb, work_num)
                 treeiter = self.sibling_liststore.append(row)
                 if recording_model.work_num == work_num:
-                    with signal_blocker(self.sibling_treeselection,
-                            'changed'):
+                    with signal_blocker(self.sibling_treeselection, 'changed'):
                         self.sibling_treeselection.select_iter(treeiter)
 
     # If a recording is saved, redo the search. If it is deleted, then it is

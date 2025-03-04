@@ -233,9 +233,8 @@ class Selector(Gtk.Grid):
 
         self.hide_track_window()
 
-        # The recording selection did not survive the filter,
-        # so any corresponding selection in playqueue_select
-        # also does not survive.
+        # The recording selection did not survive the filter, so any
+        # corresponding selection in playqueue_select also does not survive.
         selection = playqueue_select.playqueue_treeselection
         selection.unselect_all()
 
