@@ -1,6 +1,7 @@
 """A form for acquiring cover art images."""
 
 import re
+from contextlib import chdir
 from enum import Enum
 from mutagen import id3
 from mutagen.flac import Picture
@@ -17,7 +18,6 @@ from common.constants import IMAGES, IMAGES_DIR
 from common.constants import BORDER, THUMBNAIL_SIZE
 from common.constants import EXPAND, NOEXPAND
 from common.contextmanagers import stop_emission
-from common.contextmanagers import cd_context
 from common.decorators import emission_stopper
 from common.descriptors import QuietProperty
 from common.initlogging import logger
@@ -292,7 +292,7 @@ class ImagesEditor(Gtk.Box):
         # Some images might have been deleted from images_liststore
         # after the recording was saved, so delete all existing image
         # files and save the ones in images_liststore that survive.
-        with cd_context(Path(IMAGES, uuid)):
+        with chdir(Path(IMAGES, uuid)):
             for file_path in Path('.').iterdir():
                 file_path.unlink()
 

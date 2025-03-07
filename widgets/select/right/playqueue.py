@@ -125,15 +125,19 @@ class Playqueue(Gtk.Box):
         options_button.connect_menuitem('Select', 'Clear queue',
                 self.on_options_select_clear_queue)
 
+    # Select matching set in playqueue.
     def on_search_incremental_selection_changed(self, searchincremental,
             genre, uuid, work_num, tracks):
         for row in playqueue_model_with_attrs:
             if (row.uuid, row.work_num) == (uuid, work_num):
                 with stop_emission(self.playqueue_treeselection, 'changed'):
                     self.playqueue_treeselection.select_iter(row.iter)
-                break
-        else:
-            self.playqueue_treeselection.unselect_all()
+                return
+
+        # No set matched. If there are any sets in the queue, unselect them.
+        if bool(playqueue_model_with_attrs):
+            with stop_emission(self.playqueue_treeselection, 'changed'):
+                self.playqueue_treeselection.unselect_all()
 
     def on_options_select_remove_set(self, menuitem):
         self.on_remove_activated(menuitem)

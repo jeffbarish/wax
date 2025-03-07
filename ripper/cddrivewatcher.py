@@ -5,6 +5,7 @@ import discid
 import fcntl
 import os
 import sys
+from contextlib import suppress
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -44,10 +45,8 @@ class CDDriveWatcher(GObject.Object):
                     self.disc_ready = False
                 return True
 
-            try:
+            with suppress(OSError):
                 os.close(fd)
-            except OSError:
-                pass
 
             # Writing to self.disc_ready triggers notify even if the value
             # does not change, so write only if the value actually changes.

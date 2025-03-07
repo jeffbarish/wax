@@ -1,7 +1,7 @@
 """Context managers."""
 
 import os
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 
 import gi
 gi.require_version('GObject', '2.0')
@@ -9,35 +9,26 @@ from gi.repository import GObject
 
 from .connector import getattr_from_obj_with_name
 
-@contextmanager
-def cd_context(directory):
-    """Change to directory directory before executing some statements
-    and then return to the original directory when done."""
-    cwd = os.getcwd()
-    os.chdir(str(directory))
-    yield
-    os.chdir(cwd)
-
 # These two context managers make it possible to stop emission either with
-# the name of an object or with the object itself.
+# the name of an object or with the object itself. If is not unusual to
+# use the context to stop emission of a signal from an object in more than
+# one place. The first context to exit will delete obj._stop_emission, so
+# suppress AttributeError when subsequent ones attempt to delete the same
+# attribute.
 @contextmanager
 def stop_emission_with_name(obj_name, signal):
     obj = getattr_from_obj_with_name(obj_name)
     obj._stop_emission = signal
     yield
-    try:
+    with suppress(AttributeError):
         del obj._stop_emission
-    except AttributeError:
-        pass
 
 @contextmanager
 def stop_emission(obj, signal):
     obj._stop_emission = signal
     yield
-    try:
+    with suppress(AttributeError):
         del obj._stop_emission
-    except AttributeError:
-        pass
 
 # Block the default handler for signal in gtk_object. Custom handlers
 # still run.

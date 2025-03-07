@@ -1,6 +1,7 @@
 """A widget for acquiring and displaying documents."""
 
 import os
+from contextlib import chdir
 from pathlib import Path
 
 import gi
@@ -11,7 +12,7 @@ from gi.repository import Gtk
 from common.constants import DOCUMENTS, TRANSFER
 from common.constants import PDF_EXT
 from common.constants import EXPAND
-from common.contextmanagers import cd_context, signal_blocker
+from common.contextmanagers import signal_blocker
 from common.descriptors import QuietProperty
 from common.utilities import debug
 from widgets.pdfviewer import MyDocsListstore, PdfViewer
@@ -162,7 +163,7 @@ class DocsEditor(Gtk.Box):
         # Some documents might have been deleted from my_docs_liststore
         # after the recording was saved, so delete all existing doc files
         # and save the ones in docs_liststore/pdf_data that survive.
-        with cd_context(Path(DOCUMENTS, uuid)):
+        with chdir(Path(DOCUMENTS, uuid)):
             for file_path in Path('.').iterdir():
                 if file_path not in self.my_docs_liststore.name_iter():
                     file_path.unlink()
