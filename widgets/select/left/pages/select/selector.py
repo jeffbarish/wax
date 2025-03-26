@@ -20,7 +20,7 @@ from common.connector import getattr_from_obj_with_name
 from common.contextmanagers import stop_emission
 from common.decorators import emission_stopper
 from common.decorators import idle_add
-from common.types import DragCargo
+from common.types import DragCargo, TrackTuple
 from common.utilities import debug
 from widgets.select.right import select_right as playqueue_select
 from widgets.select.right import playqueue_model_with_attrs
@@ -251,7 +251,7 @@ class Selector(Gtk.Grid):
         self.scroll_selection()
 
     def on_search_incremental_selection_changed(self, searchincremental,
-            genre, uuid, work_num, tracks):
+            genre: str, uuid: str, work_num: int, tracks: list[TrackTuple]):
         self.set_selection(genre, uuid, work_num, tracks)
 
     def on_search_sibling_selection_changed(self, searchsibling,
@@ -285,6 +285,10 @@ class Selector(Gtk.Grid):
         self.recording_selector.view.scroll_to_cell(treepath,
                 None, True, 0.5, 0.0)
 
+    # The track_selection changed handler in trackselector needs to run first
+    # because it might further change the track selection if there are track
+    # groups.
+    @idle_add
     @emission_stopper()
     def on_track_selection_changed(self, selection):
         row_selected = bool(selection.count_selected_rows())
@@ -331,7 +335,8 @@ class Selector(Gtk.Grid):
     # gets updated in response to genre-changed, which was emitted by
     # genrebutton if the genre actually changed (otherwise, the short
     # model is already current).
-    def set_selection(self, new_genre, uuid, work_num, tracks):
+    def set_selection(self, new_genre: str, uuid: str, work_num: int,
+            tracks: list[TrackTuple]):
         # The handler for genre-changed sets the filter buttons to their first
         # menuitem, but code in finish_set_selection sets the buttons correctly
         # for the selection. Also, the handler for genre-changing (above) saves
@@ -358,7 +363,8 @@ class Selector(Gtk.Grid):
         self.finish_set_selection(new_genre, uuid, work_num, tracks)
 
     @idle_add
-    def finish_set_selection(self, new_genre, uuid, work_num, tracks):
+    def finish_set_selection(self, new_genre, uuid, work_num,
+            tracks: list[TrackTuple]):
         # Find the row that corresponds to the playqueue selection.
         row_iter, short = self.get_short_by_uuid(uuid, work_num)
         if row_iter is None:

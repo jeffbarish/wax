@@ -6,7 +6,7 @@ from pathlib import Path
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GObject, GLib
+from gi.repository import Gtk, GObject
 
 from . import doublebutton
 from .filechooser import FileChooser
@@ -18,7 +18,6 @@ from common.constants import NOEXPAND, SND_EXT, TRANSFER
 from common.utilities import debug
 from ripper import ripper
 from widgets import options_button
-from widgets import edit
 
 file_chooser = FileChooser()
 raw_metadata = RawMetadata()

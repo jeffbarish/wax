@@ -13,6 +13,7 @@ from common.connector import getattr_from_obj_with_name
 from common.connector import register_connect_request
 from common.constants import PROPS_REC, PROPS_WRK, NOEXPAND
 from common.descriptors import QuietProperty
+from common.types import MetadataItem
 from common.utilities import debug
 from ripper import ripper
 from widgets import options_button
@@ -131,7 +132,7 @@ class PropertiesEditor(Gtk.ScrolledWindow):
                 entry.set_text('')
         self._properties_changed = False
 
-    def get_props(self):
+    def get_props(self) -> tuple[list[MetadataItem], list[MetadataItem]]:
         props = {key: (entry.get_text(),)
                 for key, entry in self.entries.items()}
         props_rec = [(key, props.pop(key)) for key in PROPS_REC]

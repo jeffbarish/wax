@@ -101,11 +101,18 @@ class Ripper:
         GLib.source_remove(self.timer_id)  # stop the progress timer
         self.timer_id = None
         track_num = self.cd_src.get_property('track')
-        file_size, mtime = self.get_size_mtime(self.part_file_name)
 
         self.pipeline.set_state(Gst.State.NULL)
 
-        self.part_file_name.rename(self.file_name)
+        # If ripper.on_abort_button_clicked just deleted the part file
+        # (along with the folder), then we are done.
+        try:
+            self.part_file_name.rename(self.file_name)
+        except FileNotFoundError:
+            self.send_reply('state', 'NULL')
+            self.send_reply('rip-finished')
+            return
+
         self.send_reply('rip-track-finished', self.uuid, self.disc_num,
                 track_num - 1)
 
@@ -140,7 +147,6 @@ class Ripper:
         fraction = position / duration
         track_num = self.cd_src.get_property('track')
         if success:
-            file_size, mtime = self.get_size_mtime(self.part_file_name)
             self.send_reply('rip-track-position', self.uuid, self.disc_num,
                     track_num - 1, fraction)
         return True
@@ -156,13 +162,6 @@ class Ripper:
     def get_state(self):
         _, state, _ = self.pipeline.get_state(Gst.CLOCK_TIME_NONE)
         return STATES[int(state)]
-
-    def get_size_mtime(self, snd_path):
-        stat = snd_path.stat()
-        mtime_fmt = '%Y %b %d %H:%M:%S'
-        mtime = datetime.fromtimestamp(stat.st_mtime).strftime(mtime_fmt)
-        size = f'{stat.st_size / 1e6:.2f}'
-        return size, mtime
 
     # -Command handlers--------------------------------------------------------
     def on_command_in(self, source, result):

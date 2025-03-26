@@ -1,6 +1,5 @@
 """Sibling search."""
 
-import pickle
 from pathlib import Path
 
 import gi
@@ -16,7 +15,7 @@ from common.constants import IMAGES, IMAGES_DIR
 from common.contextmanagers import signal_blocker
 from common.decorators import emission_stopper
 from common.decorators import idle_add
-from common.types import DragCargo, GroupTuple
+from common.types import GroupTuple
 from common.utilities import playable_tracks
 from common.utilities import debug
 from widgets.select.right import playqueue_model

@@ -4,9 +4,8 @@ import os
 import shelve
 import string
 import bisect
-from itertools import groupby
 from itertools import product
-from time import time
+from typing import Iterator
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -19,7 +18,7 @@ from common.constants import LONG, IMAGES, IMAGES_DIR
 from common.contextmanagers import signal_blocker
 from common.decorators import emission_stopper
 from common.decorators import idle_add
-from common.types import GroupTuple
+from common.types import GroupTuple, TrackID
 from common.utilities import debug
 from common.utilities import playable_tracks
 from unidecode import unidecode
@@ -27,7 +26,14 @@ from widgets import control_panel
 
 N_MATCHES_MAX = 299
 
-def normalize(text):
+type WorkID = tuple[str, int]  # (uuid, work_num)
+type MatchValues = list[str]
+type TrackMatchValues = dict[TrackID, MatchValues]
+
+# str is 'work' or 'tracks'.
+type MatchValuesDict = dict[str, MatchValues | TrackMatchValues]
+
+def normalize(text:str) -> str:
     text = text.strip()
     text = text.strip(string.punctuation)
     text = text.lower()
@@ -36,9 +42,9 @@ def normalize(text):
     return unidecode(text)
 
 # Normalize text, split it, and discard short values and numbers.
-def splitter(text):
+def splitter(text: str) -> list:
     return [t.strip(string.punctuation) for t in normalize(text).split()
-            if len(t) > 3 and not t.isdigit()]
+            if len(t) > 2 and not t.isdigit()]
 
 @Gtk.Template.from_file('data/glade/select/search/incremental.glade')
 class SearchIncremental(Gtk.Box):
@@ -57,8 +63,9 @@ class SearchIncremental(Gtk.Box):
         super().__init__()
         self.set_name('search-incremental')
         self.tab_text = 'Incremental'
-        self.first_match = {}
-        self.flowboxchild_map = {}
+
+        self.match_values: MatchValuesDict = {}
+        self.flowboxchild_map: dict[Gtk.FlowBoxChild, WorkID] = {}
 
         self.incremental_flowbox.connect('selected-children-changed',
                 self.on_flowbox_selected_children_changed)
@@ -106,12 +113,14 @@ class SearchIncremental(Gtk.Box):
     def on_recording_saved(self, editnotebook, genre):
         text = normalize(self.incremental_entry.props.text)
         if text:
-            self.first_match_text, self.first_match = self.start(text)
+            self.match_text = text
+            self.match_values = self.start(text)
 
     def on_work_deleted(self, editnotebook, genre, uuid, work_num):
         text = normalize(self.incremental_entry.props.text)
         if text:
-            self.first_match_text, self.first_match = self.start(text)
+            self.match_text = text
+            self.match_values = self.start(text)
 
     def on_flowbox_selected_children_changed(self, flowbox):
         children = flowbox.get_selected_children()
@@ -119,67 +128,23 @@ class SearchIncremental(Gtk.Box):
             return
         flowboxchild = children[0]
 
-        # Find the recording that corresponds with flowboxchild.
-        recording, uuid, work_num = self.get_recording(flowboxchild)
-
-        match_text_l = splitter(self.incremental_entry.props.text)
-
-        def yield_metadata_names(metadata):
-            keys, m_vals = zip(*metadata)
-
-            # m_vals is a tuple of all metadata values (irrespective of key).
-            for m_val in m_vals:
-                for val in m_val:
-                    yield val
-
-        # Tracks match if any word in text matches any word in match_text. The
-        # other words in match_text must have matched some other track or work
-        # metadata, else the recording would not appear in the search results.
-        def match(text):
-            text_l = splitter(text)
-            return any(t.startswith(m)
-                    for t, m in product(text_l, match_text_l))
-
-        values_str = ' '.join(s for work in recording.works.values()
-                for val in work.metadata for s in val)
-        values_l = splitter(values_str)
-
-        # For a match to work metadata, every word in match_text must
-        # match some word in values_str.
+        uuid, work_num = self.flowboxchild_map[flowboxchild]
+        recording = self.get_recording(uuid)  # read recording from  long
         work = recording.works[work_num]
-        if all(any(v.startswith(m) for v in values_l) for m in match_text_l):
-            # tracks is a list of tracktuples of playable tracks.
-            tracks = playable_tracks(recording.tracks, work.track_ids)
-        else:
-            group_map = {t: GroupTuple(g_name, g_metadata)
-                    for g_name, g_track_ids, g_metadata in work.trackgroups
-                    for t in g_track_ids}
-            # Create a list of tracks that match the track title or a value
-            # in the metadata for the track. If the track is in a track
-            # group, also check for a match with the title of the group
-            # or a value in the metadata for the group.
-            tracks = []
-            for track in recording.tracks:
-                if match(track.title):
-                    tracks.append(track)
-                elif track.metadata:
-                    if any(map(match, yield_metadata_names(track.metadata))):
-                        tracks.append(track)
-                elif group := group_map.get(track.track_id, None):
-                    if match(group.title):
-                        tracks.append(track)
-                    elif group.metadata:
-                        if any(map(match,
-                                yield_metadata_names(group.metadata))):
-                            tracks.append(track)
+        id_map = {t.track_id: t for t in recording.tracks}
 
-        genre = recording.works[work_num].genre
-        self.emit('selection-changed', genre, uuid, work_num, tracks)
+        values = self.match_values[(uuid, work_num)]
 
-        # Retain matching tracks for on_drag_begin (which sends matching_tracks
-        # to selector by way of selection-changed, which then sends them on to
-        # trackselector in set_selection).
-        self.matching_tracks = tracks
+        # First do a work match.
+        search_text_values = splitter(self.incremental_entry.props.text)
+        search_text_values = [v for v in search_text_values
+                if not self.match(values['work'], [v])]
+
+        # Keep tracks that also pass a track match.
+        tracks = [id_map[t_id] for t_id, vals in values['tracks'].items()
+                if self.match(vals, search_text_values)]
+
+        self.emit('selection-changed', work.genre, uuid, work_num, tracks)
 
     def on_search_sibling_selection_changed(self, searchsibling,
             genre, uuid, work_num, tracks):
@@ -257,63 +222,100 @@ class SearchIncremental(Gtk.Box):
 
     @Gtk.Template.Callback()
     def on_incremental_entry_changed(self, incremental_entry):
-        new_text = normalize(incremental_entry.props.text)
+        # The search starts here: The user just started entering text in the
+        # incremental_entry. Initially there is no match_values, so we call
+        # start. It returns nothing until search_text is sufficient to reduce
+        # the number of matches to below N_MATCHES_MAX. At that point, we set
+        # match_text and match_values. The start method called create images
+        # to display covers of all the works that matched. Subsequent updates
+        # to search_text merely winnow that set of covers by applying the
+        # updated search_text to match_values (which never changes).
+        search_text = normalize(incremental_entry.props.text)
+        search_text_values = splitter(search_text)
 
-        if not new_text:
+        if not search_text:
             self.hide_images()
             self.show_incremental_overflow_image(False)
-            self.first_match_text, self.first_match = '', {}
-        elif self.first_match:
-            # Once self.first_match is set, it changes only if new_text no
-            # longer starts with first_match_text.
-            if new_text.startswith(self.first_match_text):
-                # If there is a first_match and new_text starts with it,
-                # then just winnow. winnow adjusts the visibility of the
-                # set of images corresponding to first_match_text.
-                self.winnow(new_text)
+            self.match_text, self.match_values = '', {}
+        elif self.match_values:
+            # Once self.match_values is set, it changes only if search_text
+            # no longer starts with match_text.
+            if search_text.startswith(self.match_text):
+                # If there is a match_values and search_text starts with
+                # it, then search_text just got extended so just winnow
+                # the set of matches on display.
+                self.winnow(search_text_values)
+                if self.incremental_flowbox.get_selected_children():
+                    flowbox = self.incremental_flowbox
+                    self.on_flowbox_selected_children_changed(flowbox)
             else:
-                # If first_match_text does not start with new_text, restart
-                # the search with new_text to find a new first_match and then
-                # winnow.
-                self.first_match_text, self.first_match = \
-                        self.restart(new_text)
-                if self.first_match:
-                    self.winnow(new_text)
+                # If match_text does not start with search_text, restart
+                # the search with search_text to find a new match_values
+                # and then winnow.
+                self.match_text, self.match_values = \
+                        self.restart(search_text)
+                if self.match_values:
+                    self.winnow(search_text_values)
+                self.incremental_flowbox.unselect_all()
         else:
-            self.first_match_text, self.first_match = self.start(new_text)
+            # match_text is the search_text that produced the set of matches
+            # on display. match_values is a dict that maps the (uuid, work_num)
+            # of each matching work to a dict with a list of values that
+            # matched work metadata and a dict that maps disc_id to a list
+            # of track values for tracks that matched. winnow uses that set
+            # of values to refine the match as search_text gets extended.
+            self.match_text = search_text
+            self.match_values = self.start(search_text)
+            self.incremental_flowbox.unselect_all()
 
-    def start(self, text):
+    def start(self, text: str) -> MatchValuesDict:
+        '''Find the "match" -- i.e., the first set of matches whose size
+        does not exceed N_MATCHES_MAX. Extending search_text does not change
+        the match, it winnows the set of visible matches. If search_text no
+        longer starts with match_text, then restart to generate a new match.'''
         self.hide_images()
 
-        # Create a dict of recordings that match the search string.
-        first_match = {}
+        match_values = {}
         for uuid, work_num, values in self.yield_matches(text):
-            first_match[(uuid, work_num)] = values
-            if len(first_match) > N_MATCHES_MAX:
+            match_values[(uuid, work_num)] = values
+            if len(match_values) > N_MATCHES_MAX:
                 self.show_incremental_overflow_image(True)
-                return '', {}
+                return {}
 
         self.show_incremental_overflow_image(False)
-        self.create_images(first_match)
+        self.create_images(match_values)
 
-        return text, first_match
+        return match_values
 
-    def restart(self, text):
+    def restart(self, text:str) -> tuple[str, MatchValuesDict]:
         # Simulate typing in the new text.
         for i in range(len(text)):
             new_text = text[:i + 1]
-            first_match_text, first_match = self.start(new_text)
-            if first_match:
-                return first_match_text, first_match
+            match_values = self.start(new_text)
+            if match_values:
+                return new_text, match_values
         return '', {}
 
-    # winnow hides flowbox children that do not match text.
-    def winnow(self, text):
+    # winnow hides flowbox children that do not match search_text_values.
+    def winnow(self, search_text_values: list):
         for flowbox_child, (uuid, work_num) in self.flowboxchild_map.items():
-            vals = self.first_match[(uuid, work_num)]
-            flowbox_child.props.visible = self.match(vals, text)
+            values_dict = self.match_values[(uuid, work_num)]
+            visible = self.full_match(values_dict, search_text_values)
+            flowbox_child.set_visible(visible)
 
-    def match(self, values, search_text):
+    def full_match(self, values_dict: MatchValuesDict,
+                search_text_values:list) -> bool:
+        search_text_values = [v for v in search_text_values
+                if not self.match(values_dict['work'], [v])]
+        if not search_text_values:
+            return True
+
+        for disc_id, vals in values_dict['tracks'].items():
+            if self.match(vals, search_text_values):
+                return True
+        return False
+
+    def match(self, values: list, search_text_values: list) -> bool:
         def bin_search(values, text):
             i = bisect.bisect_left(values, text)
             if i == len(values):
@@ -321,26 +323,32 @@ class SearchIncremental(Gtk.Box):
             if values[i].startswith(text):
                 return True
             return False
-        # Every word in search_text must match the start of some word
-        # in values.
-        search_text_l = splitter(search_text)
-        return all(bin_search(values, text) for text in search_text_l)
 
-    def create_images(self, matches):
+        # Every word in search_text_values must match the start of some word
+        # in values.
+        return all(bin_search(values, text) for text in search_text_values)
+
+    def create_images(self, match_values: MatchValuesDict):
         self.flowboxchild_map = {}
-        incremental_flowbox = self.incremental_flowbox
         for (uuid, work_num), flowbox_child \
-                in zip(matches, incremental_flowbox.get_children()):
+                in zip(match_values, self.incremental_flowbox.get_children()):
             image = self.get_image(flowbox_child)
             self.show_cover(uuid, image)
 
+            # When the user clicks on an image, we need to select the
+            # appropriate work in select mode and update the sibling
+            # selection, if the work has siblings. To that end, we
+            # need to know the (uuid, work_num) of the selected cover.
+            # flowboxchild_map provides the necessary mapping from
+            # flowbox_child to (uuid, work_num).
+            values = match_values[(uuid, work_num)]
             self.flowboxchild_map[flowbox_child] = uuid, work_num
 
-        # Now that all the tasks for creating an image have been queued, add
-        # a task to show surviving recordings based on the search text present
-        # at the time this task runs.
+        # Now that all the tasks for creating an image have been queued,
+        # add a task to show surviving recordings based on the search text
+        # present at the time this task runs.
         def show_visible_images():
-            self.winnow(normalize(self.incremental_entry.props.text))
+            self.winnow(splitter(self.incremental_entry.props.text))
         GLib.idle_add(show_visible_images)
 
     # Run show_cover from the idle loop to read an image file and set the
@@ -364,52 +372,84 @@ class SearchIncremental(Gtk.Box):
             self.incremental_flowbox.unselect_child(child)
         self.flowboxchild_map = {}
 
-    def yield_matches(self, search_text):
+    def yield_matches(self, search_text: str
+            ) -> Iterator[tuple[str, int, MatchValuesDict]]:
         with shelve.open(LONG, 'r') as recording_shelf:
             for uuid, recording in recording_shelf.items():
                 for work_num, work in recording.works.items():
-                    # Start with values in long work metadata. Any name in
-                    # short metadata will also be in long metadata. val is
-                    # a tuple which can have multiple names (name group).
-                    values = [s for val in work.metadata for s in val]
+                    # Assemble values from long work metadata. Any name in
+                    # short metadata will also be in long metadata.
+                    work_values = {name for namegroup in work.metadata
+                            for name in namegroup}
 
-                    # Add values from track titles.
+                    # work.metadata has only primary and secondary. Add nonce
+                    # names to work_values.
+                    for key, namegroup in work.nonce:
+                        work_values.update(namegroup)
+
+                    work_values = self.prepare_values(work_values)
+
+                    # Assemble values for individual tracks.
+                    group_map = {t: GroupTuple(g_title, g_metadata)
+                        for g_title, track_ids, g_metadata in work.trackgroups
+                            for t in track_ids}
+
+                    track_values = {}
                     for track in recording.tracks:
+                        values = set()
+                        track_ids = []
                         if track.track_id in work.track_ids:
-                            values.append(track.title)
+                            values.add(track.title)
                             if track.metadata:
-                                keys, m_vals = zip(*track.metadata)
-                                values.extend(v for m_val in m_vals
-                                        for v in m_val)
+                                values.update(v for k, vals in track.metadata
+                                        for v in vals)
 
-                    # Add values from trackgroup titles and trackgroup
-                    # metadata.
-                    for g_name, g_track_ids, g_metadata in work.trackgroups:
-                        if not set(g_track_ids).isdisjoint(work.track_ids):
-                            values.append(g_name)
-                            values.extend(v for key, vals in g_metadata
-                                    for v in vals)
+                            # If track in track group, append values for
+                            # track group.
+                            group_tuple = group_map.get(track.track_id, None)
+                            if group_tuple:
+                                values.add(group_tuple.title)
+                                for key, val in group_tuple.metadata:
+                                    values.update(val)
 
-                    values_str = ' '.join(values)
+                            values = self.prepare_values(values)
+                            track_values[track.track_id] = values
 
-                    # Normalize names and discard short values and numbers.
-                    values = splitter(values_str)
+                    # Perform work match test.
+                    search_text_values = splitter(search_text)
+                    search_text_values = [v for v in search_text_values
+                            if not self.match(work_values, [v])]
 
-                    values.sort()
+                    if not search_text_values:
+                        # All values in search_text_values matched work_values.
+                        # Select all tracks.
+                        values_dict = {'work': work_values,
+                                'tracks': track_values}
+                        yield uuid, work_num, values_dict
+                    else:
+                        track_matches = {}
+                        for t_id, t_vals in track_values.items():
+                            if self.match(t_vals, search_text_values):
+                                track_matches[t_id] = t_vals
+                        if track_matches:
+                            values_dict = {'work': work_values,
+                                    'tracks': track_matches}
+                            yield uuid, work_num, values_dict
 
-                    # Remove redundancies.
-                    values = [k for k, g in groupby(values)]
+    def prepare_values(self, values):
+        values_str = ' '.join(values)
 
-                    # Every word in search_text must match the start of
-                    # some word in values.
-                    if self.match(values, search_text):
-                        yield uuid, work_num, values
+        # Normalize names and discard short values and numbers; remove
+        # redundancies; and sort values to permit binary search for matches.
+        values = splitter(values_str)
+        values = list(set(values))
+        values.sort()
 
-    def get_recording(self, flowboxchild):
-        uuid, work_num = self.flowboxchild_map[flowboxchild]
+        return values
 
+    def get_recording(self, uuid):
         with shelve.open(LONG, 'r') as recording_shelf:
-            return recording_shelf[uuid], uuid, work_num
+            return recording_shelf[uuid]
 
     def get_image(self, flowboxchild):
         eventbox = flowboxchild.get_child()

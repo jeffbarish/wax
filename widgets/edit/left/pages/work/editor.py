@@ -1,10 +1,8 @@
 """A form (WorkMetadataForm) for entering and editing work metadata."""
 
 import re
-from typing import Dict, List
 from pathlib import Path
 from collections import defaultdict
-from time import time
 from itertools import chain, groupby
 
 import gi
@@ -18,6 +16,9 @@ from common.connector import getattr_from_obj_with_name
 from common.constants import METADATA_CLASSES, COMPLETERS
 from common.descriptors import QuietProperty
 from common.genrespec import genre_spec
+from common.initlogging import logger
+from common.types import NameGroup, Name_LongShort
+from common.types import MetadataItem_LongShort
 from common.utilities import debug
 from ripper import ripper
 from widgets import options_button
@@ -135,7 +136,18 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         # the corresponding columns in select mode, and those widths always
         # get written to config whenever they change, so the values in config
         # are always valid here.
-        #
+
+        # If there is only one column, then the width of the field for the
+        # short entry should be the available width (the width not occupied
+        # by the key and the arrow), not the actual width of the column in
+        # select mode.
+        if len(config['column widths'][self.edit_genre]) == 1:
+            new_width = allocation.width - 114
+            primary_group = self.metadata_groups['primary']
+            primary_group.set_last_field_short_entry_width(new_width)
+            Gtk.ScrolledWindow.do_size_allocate(self, allocation)
+            return
+
         # Sum the widths of all but the last column, but exclude any
         # columns represented by a filter button.
         widths = config['column widths'][self.edit_genre][:-1]
@@ -183,7 +195,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         Entry.all_keys = genre_spec.all_keys(genre)
 
     def on_edit_genre_changing(self, genre_button, genre):
-        self.create_mode_metadata = self.get_metadata()
+        self.create_mode_metadata = self.get_all_metadata()
 
         # If we are not in revise mode then changing the edit genre is
         # not a change.
@@ -246,7 +258,8 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
     # Provide values for the metadata fields in each group. Called from
     # editnotebook and from map_metadata below using kwargs for primary,
     # secondary, and nonce.
-    def populate(self, genre: str, **metadata: dict):
+    def populate(self, genre: str,
+            **metadata: dict[str, list[tuple[str, list[Name_LongShort]]]]):
         for metadata_class in METADATA_CLASSES:
             group = self.metadata_groups[metadata_class]
             group.populate(metadata[metadata_class])
@@ -322,7 +335,8 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
             self.primary_is_complete = bool(self.metadata_groups['primary'])
         GLib.idle_add(set_flag)
 
-    def extract_nonce_metadata(self, metadata: dict):
+    def extract_nonce_metadata(self, metadata: dict) \
+            -> dict[str, NameGroup]:
         # exclude is the sum of keys for primary and secondary.
         exclude = genre_spec.all_keys(self.edit_genre)
         return {k: [(v[0],) for v in val] for k, val in metadata.items()
@@ -350,6 +364,8 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         # Now perform the actual consolidation.
         delete_nonce_fields = []
         for key, nonce_field in nonce_group.items():
+            # Look for key in primary and secondary. If found, merge the
+            # nonce value.
             for match_class in METADATA_CLASSES:
                 match_group = self.metadata_groups[match_class]
                 if key in match_group:
@@ -367,6 +383,10 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
             # metadata because this value just got moved into the
             # secondary group.
             nonce_field.unmap_field()
+
+    def purge_invalid_nonces(self):
+        nonce_group = self.metadata_groups['nonce']
+        nonce_group.purge_invalid_nonces()
 
     def swap_values(self, src_field, dest_key):
         # Find the field for dest_key.
@@ -403,8 +423,8 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
 
         self.on_work_metadata_group_changed(None)
 
-    # Return all metadata in the form.
-    def get_metadata(self):
+    # Return all metadata (including nonce) in the form.
+    def get_all_metadata(self) -> list[tuple[str, list[Name_LongShort]]]:
         for k, f in self.items():
             f.clean()
 
@@ -413,30 +433,40 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         # editnotebook.get_work_metadata.
         return list((k, list(f.values())) for k, f in self.items())
 
-    def get_nonce(self):
-        for k, f in self.items():
+    # Return permanent (not nonce) metadata to editnotebook.get_work_metadata.
+    # This method is called by editnotebook.get_work_metadata which is called
+    # by editnotebook.on_save_button_clicked. save_button clicked also has a
+    # handler in this module. It sets work_metadata_changed to False.
+    def get_metadata(self) -> list[tuple[str, list[Name_LongShort]]]:
+        for k, f in self.items(include_nonce=False):
+            f.clean()
+
+        # As in get_all_metadata, but exclude values from fields of type
+        # NonceWorkMetadataField.
+        return list((k, list(f.values()))
+                for k, f in self.items(include_nonce=False))
+
+    def get_nonce(self) -> list[tuple[str, list[Name_LongShort]]]:
+        for k, f in self.items(include_metadata=False):
             f.clean()
 
         # As above. These tuples get unwoven in editnotebook.get_nonce.
-        return list((k, list(f.values())) for k, f in self.items()
-                if k not in genre_spec.all_keys(self.edit_genre))
+        return list((k, list(f.values()))
+                for k, f in self.items(include_metadata=False))
 
-    def unweave(self, metadata):
+    def unweave(self, metadata: list[MetadataItem_LongShort]
+                ) -> tuple[list[NameGroup], list[NameGroup]]:
         metadata_long, metadata_short = [], []
         for key, values in metadata:
             if key in config.genre_spec[self.edit_genre]['primary']:
                 values_long, values_short = zip(*values)
                 metadata_short.append(values_short)
             else:
-                try:
-                    values_long, = zip(*values)
-                except ValueError:
-                    debug('values')
-                    debug('metadata')
-            metadata_long.append((key, list(values_long)))
+                values_long, = zip(*values)
+            metadata_long.append(values_long)
         return metadata_long, metadata_short
 
-    def map_metadata(self, mb_metadata: Dict[str, List[str]]):
+    def map_metadata(self, mb_metadata: dict[str, list[str]]):
         completers_path = Path(COMPLETERS)
         completers = {p.name for p in completers_path.iterdir()}
 
@@ -533,7 +563,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         # any field is populated here, the user must have typed something in
         # after clicking Create and before the mbquery came back from the
         # worker in editsource. Prefer the user's entries.
-        current_metadata = dict(self.get_metadata())
+        current_metadata = dict(self.get_all_metadata())
 
         # Format matches by metadata class.
         primary_kv_list = []
@@ -561,9 +591,8 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
                 # value provided by the user.
                 secondary_kv_list.append((key, value))
 
-        # It appears that get_metadata returns nonce along with primary and
-        # secondary. Nonce provided by the user should also take priority
-        # over values extracted from tags or mb.
+        # Nonce provided by the user should also take priority over values
+        # extracted from tags or mb.
         nonce_kv_list = []
         for key, value in current_metadata.items():
             val = next(zip(*value))
@@ -584,8 +613,17 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
                 for group in self.metadata_groups.values()
                     if group.get_visible())
 
-    def items(self):
+    def items(self, include_metadata=True, include_nonce=True):
+        def condition(group):
+            match include_metadata, include_nonce:
+                case True, True:
+                    return True
+                case True, False:
+                    return not isinstance(group, NonceWorkMetadataGroup)
+                case False, True:
+                    return isinstance(group, NonceWorkMetadataGroup)
+
         return chain.from_iterable(group.items()
                 for group in self.metadata_groups.values()
-                    if group.get_visible())
+                    if group.get_visible() and condition(group))
 

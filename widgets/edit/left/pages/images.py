@@ -3,12 +3,11 @@
 import re
 from contextlib import chdir
 from enum import Enum
-from mutagen import id3
-from mutagen.flac import Picture
 from pathlib import Path
 
 import gi
 gi.require_version('Gtk', '3.0')
+gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Gtk, Gdk, Gio, GdkPixbuf, GLib
 from gi.repository.GdkPixbuf import PixbufLoader
 
@@ -16,7 +15,7 @@ from common.connector import register_connect_request
 from common.connector import getattr_from_obj_with_name
 from common.constants import IMAGES, IMAGES_DIR
 from common.constants import BORDER, THUMBNAIL_SIZE
-from common.constants import EXPAND, NOEXPAND
+from common.constants import EXPAND
 from common.contextmanagers import stop_emission
 from common.decorators import emission_stopper
 from common.descriptors import QuietProperty
@@ -387,7 +386,8 @@ class ImagesEditor(Gtk.Box):
             if 'Error 404' in result:
                 message = 'CAA: image not found'
             else:
-                message = re.sub(r'^.*caused by:\s*', '', result).replace('\n', '/')
+                message = re.sub(r'^.*caused by:\s*', '', result)
+                message = message.replace('\n', '/')
             self.message_label.queue_message(message,
                     self.image_provenance_label.hide,
                     self.image_provenance_label.show)

@@ -12,7 +12,6 @@ from gi.repository import Gtk
 from common.constants import DOCUMENTS, TRANSFER
 from common.constants import PDF_EXT
 from common.constants import EXPAND
-from common.contextmanagers import signal_blocker
 from common.descriptors import QuietProperty
 from common.utilities import debug
 from widgets.pdfviewer import MyDocsListstore, PdfViewer

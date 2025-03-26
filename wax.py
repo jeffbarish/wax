@@ -1,7 +1,5 @@
 """Main program for Wax."""
 
-import os
-import sys
 import signal
 
 import gi

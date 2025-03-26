@@ -8,7 +8,7 @@ from common.connector import register_connect_request
 from common.constants import NOEXPAND
 from common.utilities import debug
 from widgets import options_button
-from widgets.select.right import playqueue_model, playqueue_model_with_attrs
+from widgets.select.right import playqueue_model
 
 @Gtk.Template.from_file('data/glade/play/playqueue.glade')
 class Playqueue(Gtk.ScrolledWindow):

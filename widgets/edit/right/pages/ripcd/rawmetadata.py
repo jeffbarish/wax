@@ -75,7 +75,7 @@ class RawMetadata(Gtk.TextView):
                         else:
                             line_numbers = [chr(i + ord('a'))]
                     else:
-                        n_tracks = metadata.get('n_tracks', -1)
+                        n_tracks, = metadata.get('n_tracks', [-1])
                         if len(tracknumbers[(key, line)]) == n_tracks:
                             line_numbers = ['all']
                         else:

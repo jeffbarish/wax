@@ -9,6 +9,7 @@ from gi.repository import Gtk, GLib, Pango
 from common.connector import register_connect_request
 from common.decorators import idle_add
 from common.decorators import emission_stopper
+from common.types import MetadataItem, TrackTuple, GroupTuple, TrackID
 from common.utilities import debug
 from widgets.select.right import playqueue_model_with_attrs as playqueue_model
 from widgets.select.right import select_right as playqueue_select
@@ -174,8 +175,8 @@ class MetadataView(Gtk.Grid):
             self.update_track_metadata(tracktuple, grouptuple)
 
     def on_position(self, player,
-            track_position: int, track_duration: int,
-            set_position: int, set_duration: int):
+            track_position: float, track_duration: float,
+            set_position: float, set_duration: float):
         track_ratio = track_position / track_duration
         self.track_position = track_position
         self.track_duration = track_duration
@@ -188,7 +189,8 @@ class MetadataView(Gtk.Grid):
         self.set_progressbar.set_fraction(set_ratio)
         self.display_set_time(set_position)
 
-    def populate(self, metadata, nonce, uuid):
+    def populate(self, metadata: list[MetadataItem],
+            nonce: list[MetadataItem], uuid: str):
         model = self.metadata_liststore
         model.clear()
 
@@ -200,7 +202,8 @@ class MetadataView(Gtk.Grid):
             if any(values):
                 model.append(entry)
 
-    def update_track_metadata(self, tracktuple, grouptuple):
+    def update_track_metadata(self, tracktuple: TrackTuple,
+            grouptuple: GroupTuple):
         self.track_metadata_liststore.clear()
 
         # There is only ever 1 value (no name groups), but the value
@@ -231,8 +234,9 @@ class MetadataView(Gtk.Grid):
             self.track_metadata_liststore.append(row)
 
     # -Track progress----------------------------------------------------------
-    def on_track_started(self, player, tracktuple, grouptuple,
-            track_duration, more_tracks, uuid):
+    def on_track_started(self, player,
+            tracktuple: TrackTuple, grouptuple: GroupTuple,
+            track_duration: float, more_tracks: bool, uuid: str):
         self.update_track_metadata(tracktuple, grouptuple)
 
         # Initialize progress display.
@@ -242,16 +246,17 @@ class MetadataView(Gtk.Grid):
         self.display_track_time(0.0, self.track_duration)
         self.track_next_button.props.sensitive = more_tracks
 
-    def on_track_finished(self, player, n_tracks, track_id, uuid, work_num):
+    def on_track_finished(self, player,
+            n_tracks: int, track_id: TrackID, uuid: str, work_num: int):
         self.track_next_button.props.sensitive = bool(n_tracks)
         self.tracktuple = None
 
     def initialize_track_time_func(self):
-        def remaining(pos, dur):
+        def remaining(pos: float, dur: float):
             return dur - pos
-        def elapsed(pos, dur):
+        def elapsed(pos: float, dur: float):
             return pos
-        def total(pos, dur):
+        def total(pos: float, dur: float):
             return dur
         cycle = (remaining, elapsed, total)
         self.track_time_func_cycle = itertools.cycle(cycle)
@@ -262,12 +267,12 @@ class MetadataView(Gtk.Grid):
         self.track_time_func = next(self.track_time_func_cycle)
         self.display_track_time(self.track_position, self.track_duration)
 
-    def display_track_time(self, position, duration):
+    def display_track_time(self, position: float, duration: float):
         label = self.seconds_to_str(self.track_time_func(position, duration))
         self.track_time_button.set_label(label)
 
     # -Set progress------------------------------------------------------------
-    def on_set_ready(self, player, set_duration):
+    def on_set_ready(self, player, set_duration: float):
         self.set_duration = set_duration
         self.set_position = 0.0
         self.set_progressbar.set_fraction(0.0)
@@ -277,16 +282,16 @@ class MetadataView(Gtk.Grid):
 
         self.set_controls_box.show()
 
-        # set_duration is 0 for the alert sound.
+        # set_duration is 0.0 for the alert sound.
         self.track_metadata_treeview.props.visible = bool(set_duration)
         self.track_controls_box.props.visible = bool(set_duration)
 
     def initialize_set_time_func(self):
-        def remaining(pos):
+        def remaining(pos: float):
             return self.set_duration - pos
-        def elapsed(pos):
+        def elapsed(pos: float):
             return pos
-        def total(pos):
+        def total(pos: float):
             return self.set_duration
         cycle = (remaining, elapsed, total)
         self.set_time_func_cycle = itertools.cycle(cycle)
@@ -297,18 +302,17 @@ class MetadataView(Gtk.Grid):
         self.set_time_func = next(self.set_time_func_cycle)
         self.display_set_time(self.set_position)
 
-    def display_set_time(self, position):
+    def display_set_time(self, position: float):
         label = self.seconds_to_str(self.set_time_func(position))
         self.set_time_button.set_label(label)
 
-    def seconds_to_str(self, seconds):
-        seconds = round(seconds)
-        hours, seconds = divmod(seconds, 3600)
-        minutes, seconds = divmod(seconds, 60)
+    def seconds_to_str(self, seconds: float):
+        hours, seconds = divmod(seconds, 3600.0)
+        minutes, seconds = divmod(seconds, 60.0)
         if hours:
-            return f'{hours}:{minutes:02d}:{seconds:02d}'
+            return f'{round(hours)}:{round(minutes):02d}:{round(seconds):02d}'
         else:
-            return f'{minutes:2d}:{seconds:02d}'
+            return f'{round(minutes):2d}:{round(seconds):02d}'
 
 
 page_widget = MetadataView()

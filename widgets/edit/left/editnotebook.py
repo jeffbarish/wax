@@ -7,6 +7,7 @@ import shutil
 import shelve
 from enum import Enum, auto
 from pathlib import Path
+from typing import Iterator
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -21,10 +22,11 @@ from common.constants import SOUND, DOCUMENTS, IMAGES
 from common.constants import COMPLETERS
 from common.descriptors import QuietProperty
 from common.types import RecordingTuple, WorkTuple
+from common.types import NameGroup, MetadataItem, MetadataItem_LongShort
+from common.types import TrackTuple, TrackID, GroupTuple
 from common.utilities import debug, playable_tracks
 from ripper import ripper
 from widgets import options_button
-from widgets import edit
 from widgets.select.left.pages.select.recordingselector \
         import RecordingModelRow
 
@@ -500,13 +502,15 @@ class EditNotebook(Gtk.Notebook):
 
             options_button.sensitize_menuitem('Edit', 'Delete', True)
 
-    def create_new_recording(self, new_work, tracks, props, disc_ids, uuid):
+    def create_new_recording(self, new_work, tracks, props, disc_ids, uuid) \
+            -> RecordingTuple:
         works = {0: new_work}
 
         return RecordingTuple(works, tracks, props, disc_ids, uuid)
 
     def save_revision(self, new_work, works, tracks, props,
-                disc_ids, uuid, work_num):
+                disc_ids, uuid, work_num) \
+            -> RecordingTuple:
         works[work_num] = new_work
 
         return RecordingTuple(works, tracks, props, disc_ids, uuid)
@@ -518,10 +522,11 @@ class EditNotebook(Gtk.Notebook):
             properties_editor = self.pages['properties'].page_widget
             properties_editor.populate(self.recording.props, props)
 
-    def derive_tags(self, recording, work_num):
+    def derive_tags(self, recording, work_num) \
+            -> tuple[dict[str, str], bytes | None, list[TrackTuple]]:
         work = recording.works[work_num]
 
-        all_keys = sum(config.genre_spec[work.genre].values(), [])
+        all_keys: list = sum(config.genre_spec[work.genre].values(), [])
         work_long, work_short = self.get_work_metadata()
         short_d = dict(zip(all_keys, work_short))
         long_d = dict(zip(all_keys, work_long))
@@ -548,7 +553,7 @@ class EditNotebook(Gtk.Notebook):
             track = track._replace(title=title)
             tracks.append(track)
 
-        image_p = Path(IMAGES, recording.uuid, f'image-00.jpg')
+        image_p = Path(IMAGES, recording.uuid, 'image-00.jpg')
         if os.path.exists(image_p):
             with open(image_p, 'rb') as image_fo:
                 jpg_data = image_fo.read()
@@ -702,37 +707,31 @@ class EditNotebook(Gtk.Notebook):
         tmp_path.rename(short_path)
 
     # Weave the long and short primary metadata together.
-    def weave(self, metadata_long, metadata_short):
+    def weave(self, metadata_long: list[MetadataItem],
+                metadata_short: tuple[NameGroup, ...]) \
+            -> Iterator[MetadataItem_LongShort]:
         for (key, long_vals), short_vals in zip(metadata_long, metadata_short):
             yield (key, list(zip(long_vals, short_vals)))
 
-    def reformat(self, metadata):
+    def reformat(self, metadata: list[MetadataItem]) \
+            -> Iterator[tuple[str, list[NameGroup]]]:
         for key, vals in metadata:
             yield (key, list(zip(vals)))
 
-    def get_work_metadata_editor_genre(self):
+    def get_work_metadata_editor_genre(self) -> str:
         work_metadata_editor = self.pages['work'].page_widget
         return work_metadata_editor.edit_genre
 
-    def get_work_metadata(self):
+    def get_work_metadata(self) -> tuple[list[NameGroup], list[NameGroup]]:
         work_metadata_editor = self.pages['work'].page_widget
         work_metadata_editor.consolidate()
+
         work_metadata = work_metadata_editor.get_metadata()
+        return work_metadata_editor.unweave(work_metadata)
 
-        # Unweave long and short primary metadata.
-        metadata_long, metadata_short = [], []
-        for key, values in work_metadata:
-            genre = work_metadata_editor.edit_genre
-            if key in config.genre_spec[genre]['primary']:
-                values_long, values_short = zip(*values)
-                metadata_short.append(values_short)
-            else:
-                values_long, = zip(*values)
-            metadata_long.append(values_long)
-        return metadata_long, metadata_short
-
-    def get_nonce(self):
+    def get_nonce(self) -> list[MetadataItem]:
         work_metadata_editor = self.pages['work'].page_widget
+        work_metadata_editor.purge_invalid_nonces()
         nonce = work_metadata_editor.get_nonce()
 
         # values is a name group, so each value corresponds to another name
@@ -741,11 +740,15 @@ class EditNotebook(Gtk.Notebook):
         # metadata. We return a list of (key, (val1, ...)) tuples.
         return [(key, tuple(v for v, in values)) for key, values in nonce]
 
-    def get_tracks(self):
+    def get_tracks(self) \
+            -> tuple[
+                list[TrackTuple],
+                list[TrackID],
+                list[tuple[str, list[GroupTuple]]]]:
         track_metadata_editor = self.pages['tracks'].page_widget
         return track_metadata_editor.get_metadata()
 
-    def get_props(self):
+    def get_props(self) -> tuple[list[MetadataItem], list[MetadataItem]]:
         props_metadata_editor = self.pages['properties'].page_widget
         return props_metadata_editor.get_props()
 

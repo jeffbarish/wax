@@ -10,7 +10,8 @@ import sys
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, GLib, Gio, Gdk, Pango, Poppler, GdkPixbuf
+gi.require_version('GdkPixbuf', '2.0')
+from gi.repository import Gtk, GLib, Gio, Gdk, Poppler, GdkPixbuf
 
 from mutagen import File
 from mutagen import MutagenError
@@ -24,7 +25,6 @@ from common.contextmanagers import signal_blocker
 from common.contextmanagers import stop_emission
 from common.decorators import emission_stopper
 from common.utilities import debug
-from common.utilities import make_time_str
 from ripper import ripper
 from widgets import options_button
 
@@ -410,7 +410,7 @@ class FileChooser(Gtk.Box):
                 fileuri = name_fp.absolute().as_uri()
                 try:
                     Poppler.Document.new_from_file(fileuri, None)
-                except GLib.GError as e:
+                except GLib.GError:
                     valid = False
                 else:
                     valid = True
@@ -418,15 +418,15 @@ class FileChooser(Gtk.Box):
             elif name_fp.suffix in JPG_EXT:
                 try:
                     GdkPixbuf.Pixbuf.new_from_file(str(name_fp))
-                except GLib.GError as e:
+                except GLib.GError:
                     valid = False
                 else:
                     valid = True
                 row = (name, '', False, valid)
             elif name_fp.suffix in ('.wav', '.flac', '.ogg', '.mp3'):
                 try:
-                    snd_file = File(name_fp)
-                except MutagenError as e:
+                    File(name_fp)
+                except MutagenError:
                     valid = False
                 else:
                     valid = True

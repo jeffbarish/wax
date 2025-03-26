@@ -7,6 +7,7 @@ from pathlib import Path
 
 import gi
 gi.require_version('Gtk', '3.0')
+gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Gtk, Pango, GLib
 from gi.repository.GdkPixbuf import Pixbuf
 
@@ -91,7 +92,7 @@ class DiscidDialog(Gtk.Dialog):
             description = '\n'.join(vals)
             row = (thumbnail_pb, description, work.genre, uuid,
                     work_num, recording.tracks)
-            treeiter = liststore.append(row)
+            liststore.append(row)
 
         treeselection.set_mode(Gtk.SelectionMode.SINGLE)
 

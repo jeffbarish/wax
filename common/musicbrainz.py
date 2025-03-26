@@ -152,7 +152,7 @@ class MBQuery:
             if key in release:
                 metadata[key] = [release[key]]
         metadata['album'] = [release['title']]
-        metadata['n_tracks'] = len(track_list)
+        metadata['n_tracks'] = [len(track_list)]
         self.metadata = metadata
 
     def _get_release(self, disc, disc_id, need_asin):

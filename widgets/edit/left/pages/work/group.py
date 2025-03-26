@@ -8,6 +8,7 @@ from gi.repository import Gtk, GObject
 from common.connector import getattr_from_obj_with_name
 from common.constants import NOEXPAND
 from common.decorators import UniqObjectName
+from common.types import Name_LongShort
 from common.utilities import debug
 from .fields import PrimaryWorkMetadataField
 from .fields import SecondaryWorkMetadataField
@@ -109,7 +110,7 @@ class WorkMetadataGroup(Gtk.Frame):
         fields[-1].set_column_width(width)
 
     # Get the metadata field for each key and populate the value fields.
-    def populate(self, metadata):
+    def populate(self, metadata: list[tuple[str, list[Name_LongShort]]]):
         for key, values in metadata:
             field = self.field_type.get(key)
             field.populate(values)
@@ -129,7 +130,7 @@ class WorkMetadataGroup(Gtk.Frame):
         self.emit('work-metadata-group-changed')
 
 class NonceWorkMetadataGroup(WorkMetadataGroup):
-    def populate(self, metadata):
+    def populate(self, metadata: list[tuple[str, list[Name_LongShort]]]):
         # Because this group is nonce, the fields do not exist yet.
         keys = [key for key, values in metadata]
         self.create(keys)
@@ -152,7 +153,7 @@ class NonceWorkMetadataGroup(WorkMetadataGroup):
                     self.on_work_metadata_field_changed)
             vbox.pack_start(field, *NOEXPAND)
         field.show_all()
-        field.grab_focus() # the key entry grabs focus
+        field.grab_focus()  # the key entry grabs focus
 
     def clear(self):
         vbox = self.get_child()
@@ -163,12 +164,6 @@ class NonceWorkMetadataGroup(WorkMetadataGroup):
         self.hide()
         NonceWorkMetadataField.clear()
 
-    def remove_metadata_field(self, field):
-        vbox = self.get_child()
-        vbox.remove(field)
-        if not vbox.get_children():
-            self.hide()
-
     # An invalid nonce lacks either a key or a value. If no nonce fields
     # remain after removing invalid ones, hide the nonce group.
     def purge_invalid_nonces(self):
@@ -178,13 +173,27 @@ class NonceWorkMetadataGroup(WorkMetadataGroup):
             # row of the value. The zip generates a list of tuples with the
             # values for all the rows (there is only one tuple in the list).
             # The next grabs the first (and only) such tuple. If all of the
-            # values are nil, remove the field. field will not have attribute
-            # key if key was never set. In that case, the field also was not
-            # mapped. If it was set but then deleted, then the attribute has
+            # values are nil, remove the field.
+            #
+            # field will not have attribute key if key was never set.
+            # Specifying only a value for a new nonce would not enable save,
+            # but some other change would. Accordingly, it is possible at this
+            # point that field does not have attribute 'key'. In that case,
+            # the field also was not mapped (in metadata_fields).
+            #
+            # If key was specified but then deleted, then the attribute has
             # value '' and it has already been removed from metadata_fields
-            # and all_keys (in fields.on_key_changed), so it is necessary
-            # only to remove the field from vbox.
+            # and all_keys (in fields.on_key_changed). However, it is
+            # field.unmap_field that protects for the case that field is not
+            # actually in metadata_fields.
             key = getattr(field, 'key', None)
             if not key or not any(next(zip(*field.values()))):
                 self.remove_metadata_field(field)
+                field.unmap_field()
+
+    def remove_metadata_field(self, field):
+        vbox = self.get_child()
+        vbox.remove(field)
+        if not vbox.get_children():
+            self.hide()
 

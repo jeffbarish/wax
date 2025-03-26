@@ -1,16 +1,12 @@
 """A viewer and a treemodel for acquiring documents. Used by docs in
 edit mode and docs in play mode."""
 
-from pathlib import Path
-
 import gi
 gi.require_version('Gtk', '3.0')
-gi.require_version('GLib', '2.0')
 gi.require_version('Poppler', '0.18')
-from gi.repository import Gtk, GLib, Poppler
+from gi.repository import Gtk, Poppler
 
 from common.decorators import UniqObjectName
-from common.initlogging import logger
 from common.utilities import debug
 
 # Gtk.ListStore cannot store binary data (the data in the PDF file), so

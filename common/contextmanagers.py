@@ -1,6 +1,5 @@
 """Context managers."""
 
-import os
 from contextlib import contextmanager, suppress
 
 import gi
@@ -43,10 +42,12 @@ def signal_blocker(gtk_object, signal):
 
 # Time a block of code.
 @contextmanager
-def timer(message):
+def timer(name=None):
     from time import time
     start_time = time()
     yield
     elapsed_time = time() - start_time
-    print(f'{message} {elapsed_time * 1000.0:.2f}ms')
+    if name:
+        print(f'[{name}] ', end='')
+    print(f'Elapsed time: {elapsed_time * 1000.0:.2f}ms')
 

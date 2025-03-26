@@ -5,6 +5,7 @@ from typing import NamedTuple, List, Tuple
 
 import gi
 gi.require_version('Gtk', '3.0')
+gi.require_version('GdkPixbuf', '2.0')
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf, GObject
 
 from common.connector import getattr_from_obj_with_name
@@ -12,7 +13,7 @@ from common.connector import register_connect_request
 from common.constants import NOEXPAND
 from common.contextmanagers import signal_blocker
 from common.descriptors import QuietProperty
-from common.types import TrackTuple, GroupTuple
+from common.types import TrackTuple, GroupTuple, TrackID
 from common.types import ModelWithAttrs
 from common.utilities import debug
 from ripper import ripper
@@ -191,7 +192,7 @@ class TracksMetadataEditor(Gtk.Box):
     def populate(self,
             all_tracks: List[TrackTuple],
             work_tracks: List[TrackTuple],
-            trackgroups: List[Tuple[str, List[Tuple[int, int]]]]) -> None:
+            trackgroups: List[Tuple[str, List[Tuple[int, int]]]]):
         model = self.track_treestore
 
         self.group_map = group_map = {}
@@ -482,7 +483,10 @@ class TracksMetadataEditor(Gtk.Box):
             else:  # group was last row, so append
                 model.append(None, new_child)
 
-    def get_metadata(self):
+    def get_metadata(self) \
+            -> tuple[list[TrackTuple],
+                list[TrackID],
+                list[tuple[str, list[GroupTuple]]]]:
         tracks, trackids_playable, trackgroups = [], [], []
         for row in self.track_model:
             if self.track_model.row_has_child(row):

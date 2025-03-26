@@ -9,7 +9,7 @@ from .utilities import debug
 # object_dict maps object names to objects in the GUI hierarchy. It scans
 # the hierarchy of objects from top. There can be more than one top (e.g.,
 # wax, control_panel, player, and ripper).
-object_dict = {}
+object_dict: dict[str, object] = {}
 def traverse_widgets(tops):
     ignored_names = []
     def get_children(obj):

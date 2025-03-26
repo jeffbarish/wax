@@ -12,7 +12,6 @@ if __name__ == '__main__':
     sys.path.insert(0, dirname(dirname(sys.path[0])))
 from common.connector import register_connect_request
 from common.decorators import idle_add
-from common.genrespec import genre_spec
 from common.utilities import debug
 
 @Gtk.Template.from_file('data/glade/play/notebook.glade')

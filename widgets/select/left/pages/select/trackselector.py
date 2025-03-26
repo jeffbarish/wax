@@ -12,8 +12,9 @@ from common.connector import register_connect_request
 from common.contextmanagers import stop_emission
 from common.contextmanagers import stop_emission_with_name
 from common.decorators import emission_stopper
-from common.types import TrackTuple, GroupTuple
-from common.types import ModelWithAttrs
+from common.types import TrackTuple, GroupTuple, TrackID, MetadataItem
+from common.types import ModelWithAttrs, ModelRowWithAttrs
+from common.types import column_types
 from common.utilities import debug
 from common.utilities import playable_tracks
 from widgets import options_button
@@ -30,7 +31,9 @@ class TrackSelector(GObject.Object):
         register_connect_request('playqueue_select.restart_menuitem',
                 'activate', self.on_options_play_restart)
 
-    def populate(self, tracks, work_track_ids, trackgroups):
+    def populate(self, tracks: list[TrackTuple],
+            work_track_ids: list[TrackID],
+            trackgroups: list[tuple[str, list[TrackID], list[MetadataItem]]]):
         with stop_emission(self.view.selection, 'changed'):
             self.model.populate_track_model(
                     tracks, work_track_ids, trackgroups)
@@ -44,15 +47,15 @@ class TrackSelector(GObject.Object):
 
 class TrackModel(Gtk.TreeStore):
     def __init__(self):
-        # Columns: disc_num, track_num, title, duration, metadata
-        _types = TrackTuple.__annotations__.values()
-        super().__init__(*_types)
+        super().__init__(*column_types(TrackTuple))
 
     def clear(self):
         with stop_emission_with_name('track-view.selection', 'changed'):
             super().clear()
 
-    def populate_track_model(self, tracks, work_track_ids, trackgroups):
+    def populate_track_model(self, tracks: list[TrackTuple],
+            work_track_ids: list[TrackID],
+            trackgroups: list[tuple[str, list[TrackID], list[MetadataItem]]]):
         self.clear()
 
         # group_map is a mapping from a track_id (disc_num, track_num)
@@ -84,9 +87,9 @@ class TrackModel(Gtk.TreeStore):
                 # Start a new group.
                 current_group = group_map[track_tuple.track_id]
                 group_row = TrackTuple._convert(current_group)
-                groupiter = self.append(None, group_row)
+                groupiter: Gtk.TreeIter = self.append(None, group_row)
                 self.append(groupiter, track_tuple)
-                group_duration = track_tuple.duration
+                group_duration: float = track_tuple.duration
                 current_group = group_tuple
         else:
             # If we finish in a group, update the group duration.
@@ -94,7 +97,8 @@ class TrackModel(Gtk.TreeStore):
                 self.set_value(groupiter, duration_index, group_duration)
 
         # track_map maps every track in model from its track_id.
-        self.track_map = track_map = {}
+        track_map: dict[TrackID, ModelRowWithAttrs] = {}
+        self.track_map = track_map
         for track in ModelWithAttrs(self, TrackTuple):
             if track.is_group():
                 for child in track.iterchildren():
@@ -385,7 +389,7 @@ class TrackView(Gtk.TreeView):
                 if self.child_selections[parent_index][child_index]:
                     yield TrackTuple._make(child)
 
-    def get_selected_tracks(self):
+    def get_selected_tracks(self) -> list[TrackTuple]:
         selection = self.selection
         model = self.get_model()
 
@@ -399,19 +403,19 @@ class TrackView(Gtk.TreeView):
                     selected_rows.extend(self.yield_child_selections(row))
         return selected_rows
 
-    def set_selected_tracks(self, track_tuples):
+    def set_selected_tracks(self, tracks: list[TrackTuple]):
         for key, values in self.child_selections.items():
             self.child_selections[key] = [False for v in values]
         model = self.get_model()
 
-        # Using the track_id of each track in track_tuples (the list of
-        # track_tuples in the playqueue selection), look up in track_map
+        # Using the track_id of each track in tracks (the list of
+        # tracks in the playqueue selection), look up in track_map
         # the corresponding track in the model and then select that track.
         track_map = model.track_map
 
         with stop_emission(self.selection, 'changed'):
             self.selection.unselect_all()
-            for track_tuple in track_tuples:
+            for track_tuple in tracks:
                 # If a row got deleted then there might not be an entry in
                 # track_map for a track in the playqueue item.
                 if model_track := track_map.get(track_tuple.track_id, None):
@@ -426,9 +430,9 @@ class TrackView(Gtk.TreeView):
                             self.selection.select_path(parent.path)
 
         # Scroll the first selected track into view.
-        self.scroll_first_selected_track(track_tuples)
+        self.scroll_first_selected_track(tracks)
 
-    def unselect_track(self, track_id):
+    def unselect_track(self, track_id: TrackID):
         selection = self.selection
         model, treepaths = selection.get_selected_rows()
         for track in ModelWithAttrs(model, TrackTuple):
@@ -450,16 +454,16 @@ class TrackView(Gtk.TreeView):
                     selection.unselect_path(track.path)
                     return
 
-    def scroll_first_selected_track(self, track_tuples):
+    def scroll_first_selected_track(self, tracks: list[TrackTuple]):
         model = self.get_model()
-        for track_tuple in track_tuples:
+        for track_tuple in tracks:
             if model_track := model.track_map.get(track_tuple.track_id, None):
                 if parent := model_track.parent:
                     model_track = parent
                 self.scroll_to_cell(model_track.path, None, True, 0.5, 0.0)
                 break
 
-    def scroll_playing_track(self, track_id):
+    def scroll_playing_track(self, track_id: TrackID):
         model = self.get_model()
         getter = itemgetter(0, 1)
         for row in model:

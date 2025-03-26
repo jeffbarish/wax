@@ -33,12 +33,10 @@ def reply(f):
     reply_map[reply] = f
     return f
 
-glong = GObject.TYPE_LONG
-
 
 class Player(GObject.Object):
     @GObject.Signal
-    def set_ready(self, duration: glong):
+    def set_ready(self, duration: float):
         pass
 
     @GObject.Signal
@@ -51,13 +49,13 @@ class Player(GObject.Object):
 
     @GObject.Signal
     def position(self,
-            track_position: glong, track_duration: glong,
-            set_position: glong, set_duration: glong):
+            track_position: float, track_duration: float,
+            set_position: float, set_duration: float):
         pass
 
     @GObject.Signal
     def track_started(self, tracktuple: object, grouptuple: object,
-            track_duration: glong, more_tracks: bool, uuid: str):
+            track_duration: float, more_tracks: bool, uuid: str):
         pass
 
     @GObject.Signal
@@ -145,7 +143,7 @@ class Player(GObject.Object):
     def on_track_progressbar_button_press_event(self, eventbox, event):
         track_progressbar, = eventbox.get_children()
         allocation = track_progressbar.get_allocation()
-        width = allocation.width
+        width = float(allocation.width)
         if event.x < 10.0:
             event.x = 0.0  # close to beginning -> beginning
         ratio = event.x / width
@@ -178,7 +176,7 @@ class Player(GObject.Object):
             self.uuid = uuid = playqueue_model[0].uuid
             self.work_num = playqueue_model[0].work_num
             track_id = tracktuple.track_id
-            duration = round(tracktuple.duration * 1e9)
+            duration = tracktuple.duration * 1e9
             self.do('append-queue', uuid, track_id, duration)
 
         self.do('ready-play')
@@ -188,8 +186,8 @@ class Player(GObject.Object):
         reply_map[command](self, *args)
 
     @reply
-    def on_position(self, track_position, track_duration,
-            set_position, set_duration):
+    def on_position(self, track_position: float, track_duration: float,
+            set_position: float, set_duration: float):
         self.emit('position', track_position, track_duration,
                 set_position, set_duration)
 
@@ -204,7 +202,8 @@ class Player(GObject.Object):
             self.set_ready = False
 
     @reply
-    def on_track_started(self, track_duration, more_tracks, *trackid):
+    def on_track_started(self, track_duration:float, more_tracks: bool,
+                *trackid):
         # Engine is playing the alert sound.
         if trackid == (-1, -1):
             return
@@ -236,7 +235,7 @@ class Player(GObject.Object):
                 break
 
     @reply
-    def on_set_ready(self, set_duration):
+    def on_set_ready(self, set_duration: float):
         self.emit('set-ready', set_duration)
 
         # set_ready means the engine is ready to play. It happens once per

@@ -1,6 +1,7 @@
 """Classes for fields in the metadata form (primary, secondary, and
 custom)."""
 
+from contextlib import suppress
 from pathlib import Path
 from unidecode import unidecode
 
@@ -12,6 +13,7 @@ from common.config import config
 from common.constants import COMPLETERS, IMAGES_DIR, NOEXPAND
 from common.contextmanagers import stop_emission
 from common.decorators import emission_stopper
+from common.types import Name_LongShort
 from common.utilities import debug
 from .abbreviators import abbreviator
 
@@ -64,7 +66,7 @@ class WorkMetadataField(Gtk.Grid):
         while len(self.entries) > 1:
             self.move_buttons_up()
             with stop_emission(self, 'work-metadata-field-changed'):
-                self.remove_last_value_field()
+                self.remove_last_value_field(False)
         with stop_emission(self, 'work-metadata-field-changed'):
             self.clear_value_field()
 
@@ -76,7 +78,7 @@ class WorkMetadataField(Gtk.Grid):
 
         self.metadata_fields[key] = self
 
-    def populate(self, values):
+    def populate(self, values: list[Name_LongShort]):
         self.clear_values()  # remove superfluous entries
         self.set_text_first_value(values[0])
         for value in values[1:]:
@@ -132,7 +134,9 @@ class WorkMetadataField(Gtk.Grid):
         # If there are more entries than values, remove the excess
         # value fields, but always leave one no matter what.
         for _ in range(max(len(values), 1), len(self.entries)):
-            self.on_button_down_clicked(self.button_down)
+            # Set cleaning to True so that remove_last_value_field does
+            # not emit work-metadata-field-changed.
+            self.on_button_down_clicked(self.button_down, cleaning=True)
 
     def values(self):
         # Convert tuples of entries to tuples of entry.get_text(). Note that
@@ -141,7 +145,7 @@ class WorkMetadataField(Gtk.Grid):
         for entries in self.entries:
             yield tuple(entry.get_text() for entry in entries)
 
-    def make_completion(self, key):
+    def make_completion(self, key: str):
         model = completions_models.get(key, None)
         if model is None:
             return None
@@ -186,12 +190,12 @@ class WorkMetadataField(Gtk.Grid):
         self.move_buttons_down()
         self.append_value_field()
 
-    def on_button_down_clicked(self, button):
+    def on_button_down_clicked(self, button, cleaning=False):
         # As I call this method on PageUp, it is possible to come here when
         # there is only one value field.
         if len(self.entries) > 1:
             self.move_buttons_up()
-            self.remove_last_value_field()
+            self.remove_last_value_field(cleaning)
 
     def on_entry_changed(self, entry):
         self.emit('work-metadata-field-changed')
@@ -222,7 +226,7 @@ class PrimaryWorkMetadataField(WorkMetadataField):
         return any(all(bool(e.get_text()) for e in entry)
                 for entry in self.entries)
 
-    def set_key(self, key):
+    def set_key(self, key: str):
         super().set_key(key)
 
         # The first value entries already exist by the time the key gets set
@@ -232,7 +236,7 @@ class PrimaryWorkMetadataField(WorkMetadataField):
             entry_long, entry_short = self.entries[0]
             entry_long.set_completion(completion)
 
-    def set_column_width(self, width):
+    def set_column_width(self, width: int):
         for entry_long, entry_short in self.entries:
             entry_short.set_size_request(width, -1)
 
@@ -284,8 +288,8 @@ class PrimaryWorkMetadataField(WorkMetadataField):
     def clear_value_field(self):
         self.set_text_first_value(('', ''))
 
-    def remove_last_value_field(self):
-        if any(e.get_text() for e in self.entries[-1]):
+    def remove_last_value_field(self, cleaning: bool):
+        if any(e.get_text() for e in self.entries[-1]) and not cleaning:
             self.emit('work-metadata-field-changed')
         row_num = len(self.entries) - 2
         vbox = self.get_child_at(2, row_num + 1)
@@ -307,7 +311,7 @@ class PrimaryWorkMetadataField(WorkMetadataField):
 class SecondaryWorkMetadataField(WorkMetadataField):
     metadata_fields = {}
 
-    def set_key(self, key):
+    def set_key(self, key: str):
         super().set_key(key)
 
         # The first value entry already exists by the time the key gets set
@@ -337,9 +341,9 @@ class SecondaryWorkMetadataField(WorkMetadataField):
 
         entry.grab_focus_without_selecting()  # focus the new entry
 
-    def remove_last_value_field(self):
+    def remove_last_value_field(self, cleaning: bool):
         entry, = self.entries.pop()
-        if entry.get_text():
+        if entry.get_text() and not cleaning:
             self.emit('work-metadata-field-changed')
         entry.destroy()
 
@@ -362,7 +366,7 @@ class NonceWorkMetadataField(SecondaryWorkMetadataField):
                 for child in self if isinstance(child, Gtk.Entry))
 
     # Override set_key so that nonce fields do not have a completion.
-    def set_key(self, key):
+    def set_key(self, key: str):
         self.key = key
         with stop_emission(self, 'work-metadata-field-changed'):
             self.key_entry.set_text(key)
@@ -431,12 +435,16 @@ class NonceWorkMetadataField(SecondaryWorkMetadataField):
             self.emit('work-metadata-field-changed')
 
     def unmap_field(self):
-        del self.metadata_fields[self.key]
+        # self will not have attribute key if it was never set
+        # (AttributeError). If key was set and then deleted, then it is
+        # now '' and metadata_fields has no corresponding key (KeyError).
+        with suppress(AttributeError, KeyError):
+            del self.metadata_fields[self.key]
 
-        # Remove self.key from all_keys so that it does not appear in the
-        # popup menu for swapping values.
-        first_entry, = self.entries[0]
-        first_entry.all_keys.remove(self.key)
+            # Remove self.key from all_keys so that it does not appear in the
+            # popup menu for swapping values.
+            first_entry, = self.entries[0]
+            first_entry.all_keys.remove(self.key)
 
 class ArrowButton(Gtk.Button):
     def __init__(self, right):
@@ -455,7 +463,7 @@ class ArrowButton(Gtk.Button):
 
         self.right_images = (arrow_image_right_gray, arrow_image_right)
 
-    def set_sensitive(self, sensitive):
+    def set_sensitive(self, sensitive: bool):
         self.set_image(self.right_images[sensitive])
         Gtk.Button.set_sensitive(self, sensitive)
 

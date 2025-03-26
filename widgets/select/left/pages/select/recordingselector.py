@@ -24,6 +24,7 @@ from common.decorators import emission_stopper
 from common.genrespec import genre_spec
 from common.utilities import debug
 from common.utilities import playable_tracks
+from common.types import NameGroup, RecordingTuple
 from contextlib import contextmanager
 from widgets import control_panel
 
@@ -185,9 +186,9 @@ class RecordingSelector:
 # list (rather than a tuple per column). Tuples can contain multiple values
 # to support name groups.
 class RecordingModelRow(NamedTuple):
-    short: object   # ((tuple(str, ...))) (short primary metadata)
-    uuid: str
-    work_num: int
+    short:      object  # list[NameGroup]
+    uuid:       str
+    work_num:   int
 
 class RecordingModel(Gtk.ListStore):
     def __init__(self):
@@ -293,7 +294,7 @@ class RecordingModel(Gtk.ListStore):
         return column_data
 
     # Used when saving a new recording.
-    def insert_short(self, work_short, uuid, work_num):
+    def insert_short(self, work_short: list[NameGroup], uuid, work_num):
         new_row = RecordingModelRow(work_short, uuid, work_num)
         insort_left(self, new_row, key=self.sort_key)
 
@@ -321,7 +322,7 @@ class RecordingModel(Gtk.ListStore):
             keys = genre_spec.all_keys(self.genre)
             self.metadata = list(zip(keys, work.metadata))
 
-    def set_recording(self, recording, work_num):
+    def set_recording(self, recording: RecordingTuple, work_num: int):
         self.recording = recording
         self.work = recording.works[work_num]
         self.work_num = work_num
@@ -412,7 +413,7 @@ class RecordingView(Gtk.TreeView):
             treepath = model_filter.get_path(treeiter)
             self.scroll_to_cell(treepath, None, True, 0.5, 0.0)
 
-    def create_rec_treeview(self, genre, primarykeys):
+    def create_rec_treeview(self, genre: str, primarykeys: list[str]):
         # Adjust the number of columns for the new genre by creating missing
         # columns or removing excess ones. Put removed columns in a pool so
         # that they can be reused when needed.
@@ -497,7 +498,7 @@ class RecordingView(Gtk.TreeView):
     def on_column_width(self, column, paramspec):
         self._column_widths_changing = True
 
-    def get_column_widths(self):
+    def get_column_widths(self) -> list[int]:
         # If the column never appeared (it was always represented by a filter
         # button) then its width will be 0. Use its fixed width -- which was
         # initialized to the value in config -- instead.

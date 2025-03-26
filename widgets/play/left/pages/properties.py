@@ -7,6 +7,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
 from common.constants import PROPS_WRK
+from common.types import MetadataItem
 from common.utilities import debug
 
 @Gtk.Template.from_file('data/glade/play/properties.glade')
@@ -39,7 +40,8 @@ class PropertiesView(Gtk.Grid):
             cellrenderer = getattr(self, f'{cat}_cellrenderer_value')
             treeviewcolumn.set_cell_data_func(cellrenderer, func)
 
-    def populate(self, props_rec: List, props_wrk: List):
+    def populate(self, props_rec: List[MetadataItem],
+            props_wrk: List[MetadataItem]):
         self.props_rec_liststore.clear()
         self.props_wrk_liststore.clear()
         self.user_props_liststore.clear()

@@ -26,7 +26,9 @@ os.sched_setaffinity(os.getpid(), (3,))
 class Track(NamedTuple):
     uuid: str
     trackid: tuple
-    duration: int
+    duration: float
+
+type TrackID = tuple[int, int]
 
 SOUND = Path('recordings', 'sound')
 
@@ -43,7 +45,7 @@ class PlayEngine:
         Gst.init(None)
         self.tracks = []
         self.random = False
-        self.track_position = -1
+        self.track_position = -1.0
         self.about_to_finish = False
         self.timer_id = None
 
@@ -164,8 +166,8 @@ class PlayEngine:
             track_position = min(track_position, self.track.duration)
         else:
             # We are not interested in displaying progress through the
-            # alert sound, so force track position to 0.
-            track_position = 0
+            # alert sound, so force track position to 0.0.
+            track_position = 0.0
         set_position = self.segment_start + track_position
 
         self.send_reply('position', *self._convert_to_secs(
@@ -216,7 +218,7 @@ class PlayEngine:
         self.queue_read()
 
     @command
-    def on_append_queue(self, uuid, trackid, duration):
+    def on_append_queue(self, uuid, trackid: TrackID, duration: float):
         self.tracks.append(Track(uuid, trackid, duration))
 
     @command
@@ -271,7 +273,7 @@ class PlayEngine:
     @command
     def on_clear_queue(self):
         self.tracks = []
-        self.segment_start = 0
+        self.segment_start = 0.0
 
     @command
     def on_volume(self, value):
@@ -310,15 +312,16 @@ class PlayEngine:
         self.stop_progress_timer()
 
         track_duration = self.track.duration
-        track_position = round(track_duration * float(ratio))
+        track_position = track_duration * float(ratio)
 
         flag = Gst.SeekFlags.FLUSH
         self.playbin.seek_simple(Gst.Format.TIME, flag, track_position)
 
         # If ratio == 1.0 then we are actually advancing to the next track
-        # in response to activation of the next-track button.
-        if ratio < 1.0:
-            self.send_position(track_position)
+        # in response to activation of the next-track button. We send the
+        # position anyway so that the progress bar advances immediately to
+        # the position of the next track.
+        self.send_position(track_position)
         self.track_position = track_position
 
         self.start_progress_timer()
