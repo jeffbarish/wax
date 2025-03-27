@@ -331,8 +331,9 @@ class SearchIncremental(Gtk.Box):
 
     def create_images(self, match_values: dict):
         self.flowboxchild_map = {}
-        for (uuid, work_num), flowbox_child \
+        for work_id, flowbox_child \
                 in zip(match_values, self.incremental_flowbox.get_children()):
+            uuid, work_num = work_id
             image = self.get_image(flowbox_child)
             self.show_cover(uuid, image)
 
