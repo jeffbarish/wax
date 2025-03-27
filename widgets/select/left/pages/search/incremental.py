@@ -275,8 +275,8 @@ class SearchIncremental(Gtk.Box):
 
         match_values = {}
         for match_info in self.yield_matches(text):
-            uuid, work_num, work_values, track_values = match_info
-            match_values[(uuid, work_num)] = (work_values, track_values)
+            work_id, work_values, track_values = match_info
+            match_values[work_id] = (work_values, track_values)
             if len(match_values) > N_MATCHES_MAX:
                 self.show_incremental_overflow_image(True)
                 return {}
@@ -297,8 +297,8 @@ class SearchIncremental(Gtk.Box):
 
     # winnow hides flowbox children that do not match search_text_values.
     def winnow(self, search_text_values: list):
-        for flowbox_child, (uuid, work_num) in self.flowboxchild_map.items():
-            work_values, track_values = self.match_values[(uuid, work_num)]
+        for flowbox_child, work_id in self.flowboxchild_map.items():
+            work_values, track_values = self.match_values[work_id]
             visible = self.full_match(work_values, track_values,
                     search_text_values)
             flowbox_child.set_visible(visible)
@@ -338,12 +338,11 @@ class SearchIncremental(Gtk.Box):
 
             # When the user clicks on an image, we need to select the
             # appropriate work in select mode and update the sibling
-            # selection, if the work has siblings. To that end, we
-            # need to know the (uuid, work_num) of the selected cover.
-            # flowboxchild_map provides the necessary mapping from
-            # flowbox_child to (uuid, work_num).
-            values = match_values[(uuid, work_num)]
-            self.flowboxchild_map[flowbox_child] = uuid, work_num
+            # selection, if the work has siblings. To that end, we need
+            # to know the work_id of the selected cover. flowboxchild_map
+            # provides the necessary mapping from flowbox_child to work_id.
+            values = match_values[work_id]
+            self.flowboxchild_map[flowbox_child] = work_id
 
         # Now that all the tasks for creating an image have been queued,
         # add a task to show surviving recordings based on the search text
@@ -374,7 +373,7 @@ class SearchIncremental(Gtk.Box):
         self.flowboxchild_map = {}
 
     def yield_matches(self, search_text: str
-            ) -> Iterator[tuple[str, int, MatchValues, TrackMatchValues]]:
+            ) -> Iterator[tuple[WorkID, MatchValues, TrackMatchValues]]:
         with shelve.open(LONG, 'r') as recording_shelf:
             for uuid, recording in recording_shelf.items():
                 for work_num, work in recording.works.items():
@@ -425,14 +424,14 @@ class SearchIncremental(Gtk.Box):
                     if not search_text_values:
                         # All values in search_text_values matched work_values.
                         # Select all tracks.
-                        yield uuid, work_num, work_values, track_values
+                        yield (uuid, work_num), work_values, track_values
                     else:
                         track_matches = {}
                         for t_id, t_vals in track_values.items():
                             if self.match(t_vals, search_text_values):
                                 track_matches[t_id] = t_vals
                         if track_matches:
-                            yield uuid, work_num, work_values, track_matches
+                            yield (uuid, work_num), work_values, track_matches
 
     def prepare_values(self, values_set: set) -> list:
         values_str = ' '.join(values_set)
