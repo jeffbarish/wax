@@ -29,9 +29,7 @@ N_MATCHES_MAX = 299
 type WorkID = tuple[str, int]  # (uuid, work_num)
 type MatchValues = list[str]
 type TrackMatchValues = dict[TrackID, MatchValues]
-
-# str is 'work' or 'tracks'.
-type MatchValuesDict = dict[str, MatchValues | TrackMatchValues]
+type MatchValuesDict = dict[WorkID, tuple[MatchValues, TrackMatchValues]]
 
 def normalize(text:str) -> str:
     text = text.strip()
@@ -131,17 +129,17 @@ class SearchIncremental(Gtk.Box):
         uuid, work_num = self.flowboxchild_map[flowboxchild]
         recording = self.get_recording(uuid)  # read recording from  long
         work = recording.works[work_num]
-        id_map = {t.track_id: t for t in recording.tracks}
+        track_id_map = {t.track_id: t for t in recording.tracks}
 
-        values = self.match_values[(uuid, work_num)]
+        work_values, track_values = self.match_values[(uuid, work_num)]
 
-        # First do a work match.
+        # First remove values from search_text_values that match work metadata.
         search_text_values = splitter(self.incremental_entry.props.text)
         search_text_values = [v for v in search_text_values
-                if not self.match(values['work'], [v])]
+                if not self.match(work_values, [v])]
 
-        # Keep tracks that also pass a track match.
-        tracks = [id_map[t_id] for t_id, vals in values['tracks'].items()
+        # Keep tracks that match remaining values in search_text_values.
+        tracks = [track_id_map[t_id] for t_id, vals in track_values.items()
                 if self.match(vals, search_text_values)]
 
         self.emit('selection-changed', work.genre, uuid, work_num, tracks)
@@ -276,8 +274,9 @@ class SearchIncremental(Gtk.Box):
         self.hide_images()
 
         match_values = {}
-        for uuid, work_num, values in self.yield_matches(text):
-            match_values[(uuid, work_num)] = values
+        for match_info in self.yield_matches(text):
+            uuid, work_num, work_values, track_values = match_info
+            match_values[(uuid, work_num)] = (work_values, track_values)
             if len(match_values) > N_MATCHES_MAX:
                 self.show_incremental_overflow_image(True)
                 return {}
@@ -299,23 +298,25 @@ class SearchIncremental(Gtk.Box):
     # winnow hides flowbox children that do not match search_text_values.
     def winnow(self, search_text_values: list):
         for flowbox_child, (uuid, work_num) in self.flowboxchild_map.items():
-            values_dict = self.match_values[(uuid, work_num)]
-            visible = self.full_match(values_dict, search_text_values)
+            work_values, track_values = self.match_values[(uuid, work_num)]
+            visible = self.full_match(work_values, track_values,
+                    search_text_values)
             flowbox_child.set_visible(visible)
 
-    def full_match(self, values_dict: MatchValuesDict,
+    def full_match(self, work_values: MatchValues,
+                track_values: TrackMatchValues,
                 search_text_values:list) -> bool:
         search_text_values = [v for v in search_text_values
-                if not self.match(values_dict['work'], [v])]
+                if not self.match(work_values, [v])]
         if not search_text_values:
             return True
 
-        for disc_id, vals in values_dict['tracks'].items():
+        for disc_id, vals in track_values.items():
             if self.match(vals, search_text_values):
                 return True
         return False
 
-    def match(self, values: list, search_text_values: list) -> bool:
+    def match(self, values: MatchValues, search_text_values: list) -> bool:
         def bin_search(values, text):
             i = bisect.bisect_left(values, text)
             if i == len(values):
@@ -328,7 +329,7 @@ class SearchIncremental(Gtk.Box):
         # in values.
         return all(bin_search(values, text) for text in search_text_values)
 
-    def create_images(self, match_values: MatchValuesDict):
+    def create_images(self, match_values: dict):
         self.flowboxchild_map = {}
         for (uuid, work_num), flowbox_child \
                 in zip(match_values, self.incremental_flowbox.get_children()):
@@ -373,21 +374,21 @@ class SearchIncremental(Gtk.Box):
         self.flowboxchild_map = {}
 
     def yield_matches(self, search_text: str
-            ) -> Iterator[tuple[str, int, MatchValuesDict]]:
+            ) -> Iterator[tuple[str, int, MatchValues, TrackMatchValues]]:
         with shelve.open(LONG, 'r') as recording_shelf:
             for uuid, recording in recording_shelf.items():
                 for work_num, work in recording.works.items():
                     # Assemble values from long work metadata. Any name in
                     # short metadata will also be in long metadata.
-                    work_values = {name for namegroup in work.metadata
+                    work_values_set = {name for namegroup in work.metadata
                             for name in namegroup}
 
                     # work.metadata has only primary and secondary. Add nonce
-                    # names to work_values.
+                    # names to work_values_set.
                     for key, namegroup in work.nonce:
-                        work_values.update(namegroup)
+                        work_values_set.update(namegroup)
 
-                    work_values = self.prepare_values(work_values)
+                    work_values = self.prepare_values(work_values_set)
 
                     # Assemble values for individual tracks.
                     group_map = {t: GroupTuple(g_title, g_metadata)
@@ -396,23 +397,24 @@ class SearchIncremental(Gtk.Box):
 
                     track_values = {}
                     for track in recording.tracks:
-                        values = set()
-                        track_ids = []
+                        values_set = set()
+                        track_ids: list[TrackID] = []
                         if track.track_id in work.track_ids:
-                            values.add(track.title)
+                            values_set.add(track.title)
                             if track.metadata:
-                                values.update(v for k, vals in track.metadata
+                                values_set.update(
+                                    v for k, vals in track.metadata
                                         for v in vals)
 
-                            # If track in track group, append values for
+                            # If track in track group, append values_set for
                             # track group.
                             group_tuple = group_map.get(track.track_id, None)
                             if group_tuple:
-                                values.add(group_tuple.title)
+                                values_set.add(group_tuple.title)
                                 for key, val in group_tuple.metadata:
-                                    values.update(val)
+                                    values_set.update(val)
 
-                            values = self.prepare_values(values)
+                            values = self.prepare_values(values_set)
                             track_values[track.track_id] = values
 
                     # Perform work match test.
@@ -423,21 +425,17 @@ class SearchIncremental(Gtk.Box):
                     if not search_text_values:
                         # All values in search_text_values matched work_values.
                         # Select all tracks.
-                        values_dict = {'work': work_values,
-                                'tracks': track_values}
-                        yield uuid, work_num, values_dict
+                        yield uuid, work_num, work_values, track_values
                     else:
                         track_matches = {}
                         for t_id, t_vals in track_values.items():
                             if self.match(t_vals, search_text_values):
                                 track_matches[t_id] = t_vals
                         if track_matches:
-                            values_dict = {'work': work_values,
-                                    'tracks': track_matches}
-                            yield uuid, work_num, values_dict
+                            yield uuid, work_num, work_values, track_matches
 
-    def prepare_values(self, values):
-        values_str = ' '.join(values)
+    def prepare_values(self, values_set: set) -> list:
+        values_str = ' '.join(values_set)
 
         # Normalize names and discard short values and numbers; remove
         # redundancies; and sort values to permit binary search for matches.
