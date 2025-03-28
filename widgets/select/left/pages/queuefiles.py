@@ -14,7 +14,7 @@ from common.types import GroupTuple
 from common.utilities import debug
 from common.utilities import make_time_str
 from widgets.select.right import playqueue_model_with_attrs, PlayqueueModelRow
-from widgets.select.right import select_right
+from widgets.select.right import select_right as playqueue_select
 
 @Gtk.Template.from_file('data/glade/select/queuefiles.glade')
 class QueueFiles(Gtk.ScrolledWindow):
@@ -176,7 +176,7 @@ class QueueFiles(Gtk.ScrolledWindow):
                             playable=False)
                 playqueue_model_with_attrs.append(new_queue_row)
                 if new_queue_row.playable:
-                    select_right.select_last_set()
+                    playqueue_select.scroll_last_set()
                 return True
             except EOFError:
                 queue_fo.close()
@@ -185,6 +185,7 @@ class QueueFiles(Gtk.ScrolledWindow):
                 return False
 
         get_row()
+        playqueue_select.select_and_scroll_first_set()
         GLib.timeout_add(500, get_row)
 
     # Get the current metadata for the recording with uuid.

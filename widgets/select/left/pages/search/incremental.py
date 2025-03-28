@@ -72,6 +72,8 @@ class SearchIncremental(Gtk.Box):
                 self.on_recording_saved)
         register_connect_request('edit-left-notebook', 'work-deleted',
                 self.on_work_deleted)
+        register_connect_request('edit-left-notebook', 'recording-deleted',
+                self.on_recording_deleted)
         register_connect_request('selector.recording_selection', 'changed',
                 self.on_recording_selection_changed)
         register_connect_request('search-sibling', 'selection-changed',
@@ -115,6 +117,12 @@ class SearchIncremental(Gtk.Box):
             self.match_values = self.start(text)
 
     def on_work_deleted(self, editnotebook, genre, uuid, work_num):
+        text = normalize(self.incremental_entry.props.text)
+        if text:
+            self.match_text = text
+            self.match_values = self.start(text)
+
+    def on_recording_deleted(self, editnotebook, uuid):
         text = normalize(self.incremental_entry.props.text)
         if text:
             self.match_text = text
@@ -266,20 +274,18 @@ class SearchIncremental(Gtk.Box):
             self.match_values = self.start(search_text)
             self.incremental_flowbox.unselect_all()
 
+    # Find the "match" -- i.e., the first set of matches whose size does
+    # not exceed N_MATCHES_MAX. Extending search_text does not change the
+    # match, it winnows the set of visible matches. If search_text no
+    # longer starts with match_text, then restart to generate a new match.
     def start(self, text: str) -> MatchValuesDict:
-        '''Find the "match" -- i.e., the first set of matches whose size
-        does not exceed N_MATCHES_MAX. Extending search_text does not change
-        the match, it winnows the set of visible matches. If search_text no
-        longer starts with match_text, then restart to generate a new match.'''
         self.hide_images()
 
-        match_values = {}
-        for match_info in self.yield_matches(text):
-            work_id, work_values, track_values = match_info
-            match_values[work_id] = (work_values, track_values)
-            if len(match_values) > N_MATCHES_MAX:
-                self.show_incremental_overflow_image(True)
-                return {}
+        try:
+            match_values = dict(self.yield_matches(text, N_MATCHES_MAX))
+        except ValueError:  # too many matches
+            self.show_incremental_overflow_image(True)
+            return {}
 
         self.show_incremental_overflow_image(False)
         self.create_images(match_values)
@@ -373,8 +379,16 @@ class SearchIncremental(Gtk.Box):
             self.incremental_flowbox.unselect_child(child)
         self.flowboxchild_map = {}
 
-    def yield_matches(self, search_text: str
-            ) -> Iterator[tuple[WorkID, MatchValues, TrackMatchValues]]:
+    def yield_matches(self, search_text: str, n_yields: int,
+            ) -> Iterator[tuple[WorkID, tuple[MatchValues, TrackMatchValues]]]:
+        # Yield the result of a match, but limit the number of yields
+        # to n_yields.
+        def count_yields(work_id, values):
+            nonlocal n_yields
+            yield work_id, values
+            if not (n_yields := n_yields - 1):
+                raise ValueError
+
         with shelve.open(LONG, 'r') as recording_shelf:
             for uuid, recording in recording_shelf.items():
                 for work_num, work in recording.works.items():
@@ -422,17 +436,26 @@ class SearchIncremental(Gtk.Box):
                     search_text_values = [v for v in search_text_values
                             if not self.match(work_values, [v])]
 
+                    work_id = (uuid, work_num)
                     if not search_text_values:
                         # All values in search_text_values matched work_values.
                         # Select all tracks.
-                        yield (uuid, work_num), work_values, track_values
+                        values_tuple = (work_values, track_values)
+                        yield from count_yields(work_id, values_tuple)
                     else:
+                        # I could yield values for all tracks as winnow does a
+                        # track match (when work match is negative). However,
+                        # excluding tracks already known to be uninvolved in
+                        # the match spares winnow unnecessary effort and
+                        # consumes less memory. Moreover, I need to confirm
+                        # that there is a track match anyway.
                         track_matches = {}
                         for t_id, t_vals in track_values.items():
                             if self.match(t_vals, search_text_values):
                                 track_matches[t_id] = t_vals
                         if track_matches:
-                            yield (uuid, work_num), work_values, track_matches
+                            values_tuple = (work_values, track_matches)
+                            yield from count_yields(work_id, values_tuple)
 
     def prepare_values(self, values_set: set) -> list:
         values_str = ' '.join(values_set)
