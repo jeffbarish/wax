@@ -273,8 +273,8 @@ class Playqueue(Gtk.Box):
 
             # Get values for the primary keys.
             primary_keys = config.genre_spec[cargo.genre]['primary']
-            primary_metadata, = zip(*cargo.metadata[:len(primary_keys)])
-            primary_vals_str = '\n'.join(primary_metadata)
+            primary_vals_str = '\n'.join(', '.join(val)
+                    for val in cargo.metadata[:len(primary_keys)])
 
             # Get thumbnail.
             filename = Path(IMAGES, cargo.uuid, 'thumbnail-00.jpg')
