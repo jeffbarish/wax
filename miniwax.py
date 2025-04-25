@@ -77,7 +77,7 @@ class MiniWax:
                             show_value=False).props('instant-feedback')
         self.track_title = ui.label('').style('white-space: pre-wrap')
 
-        with ui.dropdown_button('Genre', auto_close=True,
+        with ui.dropdown_button('', auto_close=True,
                     color='#777777').classes('mt-4') as self.genre_button:
             for genre_name in genre_spec:
                 func = partial(self.on_genre_button_click, genre=genre_name)
@@ -268,6 +268,8 @@ class MiniWax:
 
         self.details_view(0)
         self.scroll_area.scroll_to(pixels=0)
+
+        self.genre_button.text = genre
 
     def on_table_row_click(self, msg):
         self.details_view(msg.args[2])
