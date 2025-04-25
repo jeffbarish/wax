@@ -31,7 +31,7 @@ type MatchValues = list[str]
 type TrackMatchValues = dict[TrackID, MatchValues]
 type MatchValuesDict = dict[WorkID, tuple[MatchValues, TrackMatchValues]]
 
-def normalize(text:str) -> str:
+def normalize(text: str) -> str:
     text = text.strip()
     text = text.strip(string.punctuation)
     text = text.lower()
