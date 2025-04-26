@@ -14,6 +14,8 @@ For an overview of Wax, read the blog post at [Archimago](https://archimago.blog
 
 There is also a thread about Wax at MusicBrainz [Forum](https://community.metabrainz.org/t/using-wax-for-cataloging-and-playing-a-music-collection/687954).
 
+Wax has a companion program, MiniWax, which makes it possible to play music from your collection from any platform with a browser.
+
 ## Author
 
 * **Jeffrey Barish**

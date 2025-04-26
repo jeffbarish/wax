@@ -77,12 +77,14 @@ class MiniWax:
                             show_value=False).props('instant-feedback')
         self.track_title = ui.label('').style('white-space: pre-wrap')
 
-        with ui.dropdown_button('', auto_close=True,
-                    color='#777777').classes('mt-4') as self.genre_button:
+        with ui.dropdown_button('', auto_close=True, color='#777777'
+                    ).classes('mt-4').props('no-caps size=13px'
+                    ) as self.genre_button:
             for genre_name in genre_spec:
                 func = partial(self.on_genre_button_click, genre=genre_name)
                 ui.item(genre_name, on_click=func).style(
-                        'background-color: #777777')
+                        'background-color: #777777; font-size: 12px;'
+                        ).props('dense')
 
         with ui.scroll_area().classes('-ms-4 -my-2') as self.scroll_area:
             self.table = ui.table(rows=[]).props('dense').classes('-mt-4')
