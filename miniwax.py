@@ -1,4 +1,5 @@
-"""Display long metadata and cover art for a specific work."""
+"""Provide play functionality for recordings in the Wax database from a
+web page, thereby enabling control from any platform with a browser."""
 
 import asyncio
 import os
@@ -23,7 +24,7 @@ from common.genrespec import genre_spec
 type NameGroup = tuple[str, ...]  # could be only 1 str
 
 class ShortMetadata(NamedTuple):
-    name_groups: tuple[NameGroup]
+    name_groups: tuple[NameGroup, ...]
     uuid: str
     work_num: int
 
@@ -52,7 +53,7 @@ class MiniWax:
             volume_value = int(fo.read())
 
         # Page layout.
-        ui.query('body').style('background-color: #555555; color: #eeeeee')
+        ui.query('body').style('background-color: #444444; color: #eeeeee')
 
         with ui.row():
             self.cover_image = ui.image().classes('w-80')
@@ -100,18 +101,25 @@ class MiniWax:
         self.pause_button.disable()
 
     def get_progress(self) -> float:
-        if hasattr(self, 'playbin'):
-            success, position = self.playbin.query_position(Gst.Format.TIME)
-            success, duration = self.playbin.query_duration(Gst.Format.TIME)
+        success, position = self.playbin.query_position(Gst.Format.TIME)
+        success, duration = self.playbin.query_duration(Gst.Format.TIME)
 
-            # If the user clicks play while play in progress, position goes to
-            # duration before restarting at 0 causing a blip in progressbar.
-            if position == duration:
-                return 0.0
-            else:
-                return float(position) / float(duration)
-        else:
+        if not success:
+            # If the user clicks play while play is in progress, both
+            # queries are unsuccessful.
             return 0.0
+        elif position == duration and not self.track_ids:
+            # Detect EOS. Normally, we would get an EOS message from the
+            # bus, but running the bus requires a GLib.mainloop.
+            self.playbin.set_state(Gst.State.NULL)
+            del self.playbin
+
+            self.timer.cancel()
+            self.pause_button.disable()
+            self.track_title.text = ''
+            return 0.0
+        else:
+            return float(position) / float(duration)
 
     async def start_gstreamer(self):
         try:
@@ -126,25 +134,9 @@ class MiniWax:
         playbin.set_property('volume', float(self.slider.value)/100.0)
         playbin.connect('about-to-finish', self.on_about_to_finish)
 
-        def on_message(_bus, msg, _):
-            if msg.type in (Gst.MessageType.ERROR, Gst.MessageType.EOS):
-                playbin.set_state(Gst.State.NULL)
-                del self.playbin
-                self.timer.cancel()
-                self.progressbar.set_value(0.0)
-                self.pause_button.disable()
-                self.track_title.text = ''
-
-                bus.remove_signal_watch()
-                self.pause_button.disable()
-
-        bus = playbin.get_bus()
-        bus.add_signal_watch()
-        bus.connect('message', on_message, None)
-
         playbin.set_state(Gst.State.PLAYING)
 
-        self.timer = ui.timer(0.1,
+        self.timer = ui.timer(1.0,
             callback=lambda: self.progressbar.set_value(self.get_progress()))
         self.pause_button.enable()
 
@@ -276,6 +268,14 @@ class MiniWax:
     def on_table_row_click(self, msg):
         self.details_view(msg.args[2])
         self.play_button.enable()
+        if hasattr(self, 'playbin'):
+            self.playbin.set_state(Gst.State.NULL)
+            del self.playbin
+            self.timer.cancel()
+
+        self.pause_button.disable()
+        self.track_title.text = ''
+        self.progressbar.set_value(0.0)
 
 
 if __name__ in {"__main__", "__mp_main__"}:
