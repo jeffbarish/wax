@@ -153,7 +153,7 @@ class MiniWax:
     def next_track(self) -> str:
         disc_num, track_num = track_id = self.track_ids.pop(0)
 
-        self.track_title.text = self.trackid_map[track_id]
+        self.track_title.text = f'{track_num+1}: {self.trackid_map[track_id]}'
 
         # Choose the highest quality sound file available.
         root = os.path.join(SOUND, self.uuid, str(disc_num),
