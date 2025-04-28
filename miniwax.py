@@ -1,7 +1,6 @@
 """Provide play functionality for recordings in the Wax database from a
 web page, thereby enabling control from any platform with a browser."""
 
-import asyncio
 import os
 import pickle
 import shelve
@@ -121,7 +120,7 @@ class MiniWax:
         else:
             return float(position) / float(duration)
 
-    async def start_gstreamer(self):
+    def start_gstreamer(self):
         try:
             file_name = self.next_track()
         except (IndexError, ValueError):
