@@ -221,8 +221,8 @@ class MiniWax:
         primary_vals_str = '\n'.join(ellipsize(line, 35) for line in lines)
         self.long_metadata_label.text = primary_vals_str
 
-        # Set the track title to the first value in trackid_map.
-        self.track_title.text = next(iter(self.trackid_map.values()))
+        disc_num, track_num = track_id = self.track_ids[0]
+        self.track_title.text = f'{track_num+1}: {self.trackid_map[track_id]}'
 
     def yield_short_data(self, genre
             ) -> Iterator[tuple[tuple[str, ...], str, int]]:
@@ -273,7 +273,6 @@ class MiniWax:
             self.timer.cancel()
 
         self.pause_button.disable()
-        self.track_title.text = ''
         self.progressbar.set_value(0.0)
 
 
