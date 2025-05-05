@@ -137,6 +137,7 @@ class FileChooser(Gtk.Box):
     @monitor_emission_stopper
     def on_current_directory_changed(self, monitor, gio_file,
             other_file, event_type):
+        self.file_chooser_types_label.set_text('')
         match event_type:
             case Gio.FileMonitorEvent.CHANGES_DONE_HINT:
                 self.populate_file_chooser()
@@ -152,13 +153,10 @@ class FileChooser(Gtk.Box):
         model, treepaths = self.file_chooser_treeselection.get_selected_rows()
 
         # If no row is selected, then the click must have been on an invalid
-        # row. In that case, the only operation permitted is Delete and
-        # self.treepaths got set with the path of the row (in
-        # on_file_chooser_treeview_button_press_event).
+        # row or a directory. In those cases, use the row selection determined
+        # in on_file_chooser_treeview_button_press_event.
         if not treepaths:
-            with signal_blocker(self.file_chooser_treeselection, 'changed'):
-                self._delete(self.treepaths)
-            return
+            treepaths = self.treepaths
 
         match menuitem.get_label():
             case 'Open':
@@ -198,6 +196,7 @@ class FileChooser(Gtk.Box):
 
     @Gtk.Template.Callback()
     def on_file_chooser_treeview_button_press_event(self, treeview, event):
+        # No modifier key (ctrl, shift, alt) and right button.
         if event.type == Gdk.EventType.BUTTON_PRESS \
                 and event.state == 0 \
                 and event.button == 3:
@@ -221,7 +220,14 @@ class FileChooser(Gtk.Box):
                     menu_items[1].set_sensitive(False)
                     self.treepaths = [row_path]
                     self.file_chooser_types_label.set_text('')
+                elif isdir:
+                    menu_items[0].set_sensitive(True)
+                    menu_items[1].set_sensitive(True)
+                    self.treepaths = [row_path]
+                    self.file_chooser_types_label.set_text('')
                 else:
+                    menu_items[0].set_sensitive(True)
+                    menu_items[1].set_sensitive(True)
                     for menu_item in menu_items:
                         menu_item.set_sensitive(True)
 
@@ -232,7 +238,11 @@ class FileChooser(Gtk.Box):
                 treeselection = self.file_chooser_treeselection
                 with stop_emission(treeselection, 'changed'):
                     treeselection.unselect_all()
-                treeselection.select_path(row_path)
+                    if isdir:
+                        treeselection.select_path(row_path)
+
+                if not isdir:
+                    treeselection.select_path(row_path)
 
                 return True
 
@@ -298,7 +308,8 @@ class FileChooser(Gtk.Box):
 
         with monitor_stop_emission(self.monitor):
             oldpath.rename(target)
-        doublebutton.config(None, True, False)
+
+        self.config_doublebutton()
 
     @Gtk.Template.Callback()
     def on_file_chooser_filenames_cellrenderertext_editing_canceled(self,
@@ -345,11 +356,11 @@ class FileChooser(Gtk.Box):
             return
 
         name, duration, isdir, valid = model[treepaths[0]]
-        name_fp = Path(TRANSFER, *self.current_dir, name)
-        if name_fp.is_dir():
+        if isdir:
             self._down_dir(name)
             self._set_delete_button_sensitive()
             self.file_chooser_types_label.set_text('')
+            doublebutton.config(None, False, False)
             return
         self._set_delete_button_sensitive()
 

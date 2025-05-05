@@ -23,7 +23,7 @@ from common.genrespec import genre_spec
 type NameGroup = tuple[str, ...]  # could be only 1 str
 
 class ShortMetadata(NamedTuple):
-    name_groups: tuple[NameGroup, ...]
+    names: tuple[str, ...]
     uuid: str
     work_num: int
 
@@ -36,8 +36,8 @@ def normalize(text: str) -> str:
 def joiner(name_group: tuple) -> str:
     return ', '.join(name_group)
 
-def sort_key(vals: tuple[tuple[str, ...], str, int]) -> tuple[str, ...]:
-    return tuple(normalize(y) for y in vals[0])
+def sort_key(short_metadata: ShortMetadata) -> tuple[str, ...]:
+    return tuple(normalize(name) for name in short_metadata.names)
 
 def ellipsize(val: str, max_len: int) -> str:
     return val if len(val) < max_len else f'{val[:max_len-1]}\u2026'
@@ -77,20 +77,23 @@ class MiniWax:
                             show_value=False).props('instant-feedback')
         self.track_title = ui.label('').style('white-space: pre-wrap')
 
-        with ui.dropdown_button('', auto_close=True, color='#777777'
-                    ).classes('mt-4').props('no-caps size=13px'
-                    ) as self.genre_button:
-            for genre_name in genre_spec:
-                func = partial(self.on_genre_button_click, genre=genre_name)
-                ui.item(genre_name, on_click=func).style(
-                        'background-color: #777777; font-size: 12px;'
-                        ).props('dense')
+        with ui.button_group():
+            with ui.dropdown_button('', auto_close=True, color='#777777'
+                        ).classes('mt-4').props('no-caps size=13px'
+                        ) as self.genre_button:
+                for genre_name in genre_spec:
+                    func = partial(self.on_genre_button_click, genre=genre_name)
+                    ui.item(genre_name, on_click=func).style(
+                            'background-color: #777777; font-size: 12px;'
+                            ).props('dense')
+            self.subgenre_button = ui.dropdown_button('Subgenre',
+                        auto_close=True, color='#777777'
+                    ).classes('mt-4').props('no-caps size=13px')
 
         with ui.scroll_area().classes('-ms-4 -my-2') as self.scroll_area:
             self.table = ui.table(rows=[]).props('dense').classes('-mt-4')
             self.table.style('background-color: #777777; color: #eeeeee')
             self.table.on('rowClick', self.on_table_row_click)
-
 
         # Initialize the display by pretending that the user selected a
         # genre and a work.
@@ -197,22 +200,34 @@ class MiniWax:
         with open('.minimax', 'wt') as fo:
             fo.write(str(slider.value))
 
-    def details_view(self, index):
-        vals, uuid, work_num = self.short_data[index]
-        with shelve.open(LONG, 'r') as recording_shelf:
-            recording = recording_shelf[uuid]
+    def get_short_metadata_for_index(self, index):
+        if self.genre_has_subgenre:
+            subgenre = self.subgenre_button.text
+            i = -1
+            for short_metadata in self.short_metadata:
+                if short_metadata.names[0] == subgenre:
+                    i += 1
+                    if i == index:
+                        return short_metadata
+        else:
+            return self.short_metadata[index]
 
-        work = recording.works[work_num]
+    def details_view(self, index):
+        short_metadata = self.get_short_metadata_for_index(index)
+        with shelve.open(LONG, 'r') as recording_shelf:
+            recording = recording_shelf[short_metadata.uuid]
+
+        work = recording.works[short_metadata.work_num]
         metadata = work.metadata
 
         self.track_ids = work.track_ids
-        self.uuid = uuid
+        self.uuid = short_metadata.uuid
 
         self.trackid_map = {
                 tracktuple.track_id: ellipsize(tracktuple.title, 58)
                     for tracktuple in recording.tracks}
 
-        cover_path = Path(IMAGES, uuid, 'image-00.jpg')
+        cover_path = Path(IMAGES, short_metadata.uuid, 'image-00.jpg')
         if not cover_path.is_file():
             cover_path = Path('noimage.png')
         self.cover_image.source = cover_path
@@ -224,45 +239,87 @@ class MiniWax:
         disc_num, track_num = track_id = self.track_ids[0]
         self.track_title.text = f'{track_num+1}: {self.trackid_map[track_id]}'
 
-    def yield_short_data(self, genre
+    def yield_short_metadata(self, genre
             ) -> Iterator[tuple[tuple[str, ...], str, int]]:
         short_path = Path(SHORT, genre)
         with open(short_path, 'rb') as fo:
             while True:
                 try:
-                    short = ShortMetadata._make(pickle.load(fo))
+                    name_groups, uuid, work_num = pickle.load(fo)
                     # Transform (('name1',), ('name2a', 'name2b'), ('name3',))
-                    # to ('name1', 'name2a, name2b', 'name3').
-                    new_names = tuple(joiner(name_group) \
-                            for name_group in short.name_groups)
-                    yield (new_names, short.uuid, short.work_num)
+                    # to ('name1', 'name2a, name2b', 'name3') and ellipsize
+                    # the resulting name strings.
+                    names = tuple(ellipsize(joiner(name_group), 30) \
+                            for name_group in name_groups)
+                    yield ShortMetadata(names, uuid, work_num)
                 except EOFError:
                     return
 
     def on_genre_button_click(self, genre):
-        self.short_data = list(self.yield_short_data(genre))
-        self.short_data.sort(key=sort_key)
+        self.genre_button.text = genre
+        self.primary_keys = primary_keys = config.genre_spec[genre]['primary']
+        self.genre_has_subgenre = (self.primary_keys[0] == 'subgenre')
 
-        short_metadata = [tuple(ellipsize(name, 30)
-                for name in vals) for vals, uuid, work_num in self.short_data]
+        # short_data is a list of ShortMetadata tuples.
+        self.short_metadata = list(self.yield_short_metadata(genre))
+        self.short_metadata.sort(key=sort_key)
 
-        primary_keys = config.genre_spec[genre]['primary']
+        # If the first key is subgenre, leave that value out of the table.
+        first_index = int(self.genre_has_subgenre)
         columns = [{'name': col_name,
                 'label': col_name.capitalize(),
                 'field': col_name,
                 'required': True,
-                'align': 'left'} for col_name in primary_keys]
-        rows = [dict(zip(primary_keys, row_vals))
-                for row_vals in short_metadata]
-
+                'align': 'left'}
+                        for col_name in primary_keys[first_index:]]
         self.table.columns = columns
+
+        if self.genre_has_subgenre:
+            self.activate_subgenre_button()
+            self.subgenre_button.visible = True
+        else:
+            self.subgenre_button.visible = False
+
+            rows = [dict(zip(primary_keys, short_metadata.names))
+                    for short_metadata in self.short_metadata]
+            self.table.rows = rows
+
+            self.details_view(0)
+            self.scroll_area.scroll_to(pixels=0)
+
+    def activate_subgenre_button(self):
+        # Remove all values from the subgenre_button.
+        for element in reversed(list(self.subgenre_button.descendants())):
+            self.subgenre_button.remove(element)
+
+        # Collect and order all the subgenre names.
+        subgenres = set()
+        subgenres.update(short_metadata.names[0]
+                for short_metadata in self.short_metadata)
+        subgenres = list(subgenres)
+        subgenres.sort()
+
+        # Populate the subgenre menu with the subgenres in the genre.
+        with self.subgenre_button:
+            for subgenre in subgenres:
+                func = partial(self.on_subgenre_button_click,
+                        subgenre=subgenre)
+                ui.item(subgenre, on_click=func).style(
+                        'background-color: #777777; font-size: 12px;'
+                        ).props('dense')
+
+        self.on_subgenre_button_click(subgenres[0])
+
+    def on_subgenre_button_click(self, subgenre):
+        self.subgenre_button.text = subgenre
+
+        rows = [dict(zip(self.primary_keys, short_metadata.names))
+                for short_metadata in self.short_metadata
+                    if short_metadata.names[0] == subgenre]
         self.table.rows = rows
-        self.table.update()
 
         self.details_view(0)
         self.scroll_area.scroll_to(pixels=0)
-
-        self.genre_button.text = genre
 
     def on_table_row_click(self, msg):
         self.details_view(msg.args[2])
