@@ -2,6 +2,7 @@
 
 import os
 import shelve
+import textwrap
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -113,12 +114,14 @@ class RipCD(Gtk.Box):
         self.check_for_discid()
 
     def on_disc_read_error(self, cd_drive_watcher, message):
+        message = message[0].upper() + message[1:]
+        message = textwrap.fill(message, width=30)
         dialog = Gtk.MessageDialog(
                 transient_for=self.get_toplevel(),
                 flags=0,
                 message_type=Gtk.MessageType.ERROR,
                 buttons=Gtk.ButtonsType.OK,
-                text=f'Disc error: {message}')
+                text=message)
         dialog.run()
         dialog.destroy()
 
