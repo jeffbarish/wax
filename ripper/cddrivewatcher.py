@@ -8,7 +8,8 @@ import sys
 from contextlib import suppress
 
 import gi
-gi.require_version('Gtk', '3.0')
+gi.require_version('GObject', '2.0')
+gi.require_version('GLib', '2.0')
 from gi.repository import GObject, GLib
 
 CDROM_DRIVE = '/dev/cdrom'
@@ -17,6 +18,10 @@ CDROM_DRIVE_STATUS = 0x5326
 
 class CDDriveWatcher(GObject.Object):
     disc_ready = GObject.Property(type=bool, default=False)
+
+    @GObject.Signal
+    def disc_read_error(self, message: str):
+        pass
 
     def __init__(self):
         super().__init__()
@@ -74,6 +79,11 @@ class CDDriveWatcher(GObject.Object):
                 'site-packages')
         sys.path.extend((cwd, packages))
 
-        disc = discid.read()
+        try:
+            disc = discid.read()
+        except discid.disc.DiscError as e:
+            self.emit('disc-read-error', e)
+            return
+
         self.disc_id = disc.id
 

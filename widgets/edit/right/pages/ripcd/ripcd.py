@@ -92,6 +92,8 @@ class RipCD(Gtk.Box):
 
         cd_drive_watcher.connect('notify::disc-ready',
                 self.on_disc_ready_changed)
+        cd_drive_watcher.connect('disc-read-error',
+                self.on_disc_read_error)
 
     # -Signal handlers---------------------------------------------------------
     def on_disc_ready_changed(self, cd_drive_watcher, param):
@@ -109,6 +111,16 @@ class RipCD(Gtk.Box):
         self.cd_eject_button.set_sensitive(disc_ready)
 
         self.check_for_discid()
+
+    def on_disc_read_error(self, cd_drive_watcher, message):
+        dialog = Gtk.MessageDialog(
+                transient_for=self.get_toplevel(),
+                flags=0,
+                message_type=Gtk.MessageType.ERROR,
+                buttons=Gtk.ButtonsType.OK,
+                text=f'Disc error: {message}')
+        dialog.run()
+        dialog.destroy()
 
     def check_for_discid(self):
         if cd_drive_watcher.disc_id is None:

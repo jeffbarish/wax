@@ -247,12 +247,14 @@ class SearchIncremental(Gtk.Box):
             # Once self.match_values is set, it changes only if search_text
             # no longer starts with match_text.
             if search_text.startswith(self.match_text):
-                # If there is a match_values and search_text starts with
-                # it, then search_text just got extended so just winnow
-                # the set of matches on display.
+                # If there is a match_values and search_text starts with it,
+                # then search_text just changed (it got longer or shorter) so
+                # winnow (or unwinnow) the set of matches on display. Any
+                # selection might or might not have changed.
+                flowbox = self.incremental_flowbox
+                selected_children_before = flowbox.get_selected_children()
                 self.winnow(search_text_values)
-                if self.incremental_flowbox.get_selected_children():
-                    flowbox = self.incremental_flowbox
+                if selected_children_before != flowbox.get_selected_children():
                     self.on_flowbox_selected_children_changed(flowbox)
             else:
                 # If match_text does not start with search_text, restart
