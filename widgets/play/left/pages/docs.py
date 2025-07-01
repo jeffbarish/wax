@@ -40,6 +40,9 @@ class DocsView(Gtk.Box):
         self.pack_end(pdf_viewer, *EXPAND)
         self.show()
 
+        self.swipe = Gtk.GestureSwipe.new(self)
+        self.swipe.connect('swipe', self.on_swipe)
+
     @Gtk.Template.Callback()
     @emission_stopper()
     def on_docs_treeselection_changed(self, selection):
@@ -63,6 +66,12 @@ class DocsView(Gtk.Box):
     def on_docs_pdf_next_button_clicked(self, button):
         self.pdf_viewer.next_page()
         self.queue_draw()
+
+    def on_swipe(self, gesture_swipe, velocity_x, velocity_y):
+        if velocity_x > 0:
+            self.docs_pdf_prev_button.clicked()
+        else:
+            self.docs_pdf_next_button.clicked()
 
     def populate(self, uuid):
         with stop_emission(self.docs_treeselection, 'changed'):
