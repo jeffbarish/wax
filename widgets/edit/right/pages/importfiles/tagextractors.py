@@ -125,7 +125,9 @@ def flac_extractor(source_path, tags):
     if 'involved_people_list' in snd_file:
         new_names = []
         for involved_person in snd_file['involved_people_list']:
-            if b'\x03' in involved_person:
+            # eClassical uses \x03 in involved_people_list to separate role
+            # from artist.
+            if b'\x03' in involved_person.encode('utf-8'):
                 instrument, name = involved_person.split('\x03')
                 name = reverse_name(name)
                 involved_person = f'{name} ({instrument})'
