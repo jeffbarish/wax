@@ -133,12 +133,18 @@ def flac_extractor(source_path, tags):
                 involved_person = f'{name} ({instrument})'
             new_names.append(involved_person)
         snd_file['involved_people_list'] = new_names
-    # eClassical uses \x0a in artist to separate multiple artists.
-    if 'artist' in snd_file:
-        artist_l = []
-        for artist in snd_file['artist']:
-            artist_l.extend(artist.split('/'))
-        snd_file['artist'] = [reverse_name(a) for a in artist_l]
+
+    # eClassical uses \x0a ('\n') in artist to separate multiple artists.
+    for tag in ('artist', 'albumartist'):
+        if tag in snd_file:
+            # If there is one comma in the value for tag artist, assume that
+            # the value is "Last, First". Otherwise, assume that value is
+            # several names: "First1 Last1, First2 Last2, ...".
+            artist_l = []
+            for artist in snd_file[tag]:
+                pattern = '[,;/\n]' if artist.count(',') > 1 else '[;/\n]'
+                artist_l.extend(a.strip() for a in re.split(pattern, artist))
+            snd_file[tag] = [reverse_name(a) for a in artist_l]
 
     tags.update(snd_file)
     tags['source'] = _find_source(tags)

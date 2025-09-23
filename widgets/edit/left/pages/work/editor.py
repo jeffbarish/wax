@@ -467,97 +467,143 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
         return metadata_long, metadata_short
 
     def map_metadata(self, mb_metadata: dict[str, list[str]]):
+        all_keys = set(genre_spec.all_keys(self.edit_genre))
+
         completers_path = Path(COMPLETERS)
         completers = {p.name for p in completers_path.iterdir()}
+
+        # match_keys is the set of keys in the genre for which there are
+        # also completers.
+        match_keys = all_keys & completers
 
         # Names in involved_people_list often have a parenthetic phrase
         # attached describing the function of the person. Remove it.
         parens_re = re.compile(r" \(.*\)$")
-        artist_names = [parens_re.sub('', p)
+        all_names = [parens_re.sub('', p)
                 for p in mb_metadata.get('involved_people_list', [])]
-        artist_names.extend(mb_metadata.get('artist', []))
-        if not artist_names:
-            return
 
-        # Remove duplicate names.
-        artist_names.sort()
-        artist_names = [name for name, g in groupby(artist_names)]
+        artist_names = set(mb_metadata.get('artist', []))
+        all_names.extend(artist_names)
+
+        # If there were no names in the metadata, then mapping is done.
+        if not all_names:
+            return
 
         # If we are importing, then we might find more names in other ID3 tags.
         for key in ['composer', 'conductor', 'lyricist']:
-            artist_names.extend(mb_metadata.get(key, []))
+            all_names.extend(mb_metadata.get(key, []))
 
-        def scanner(matcher, key):
+        # Remove duplicate names.
+        all_names.sort()
+        all_names = [name for name, g in groupby(all_names)]
+
+        # matches is a dict of {key: set(names)}.
+        matches = defaultdict(set)
+
+        # Scan for perfect matches. Remove any perfect matches from
+        # all_names and artist_names (if the match is there). Also
+        # remove the corresponding key from match_keys as we no longer
+        # seek a match (perfect or fuzzy) for the key.
+        for key in set(match_keys):
             with Path(completers_path, key).open(encoding='utf-8') as f:
-                while line := f.readline().strip():
-                    if line.startswith('#'):
+                while match_name := f.readline().strip():
+                    if match_name.startswith('#'):
                         continue
-                    for artist in artist_names:
-                        ratio = matcher(artist, line)
+                    for name in all_names:
+                        if name == match_name:
+                            matches[key].add(name)
+
+                            all_names.remove(name)
+                            artist_names.discard(name)
+                            match_keys.remove(key)
+
+                            break
+
+        # Fuzzy matches consider only the first and last components of names
+        # with more than two components (e.g., First Middle Last).
+        def first_last(name):
+            name_split = name.split()
+            if len(name_split) > 1:
+                if name_split[0] == 'Sir' and len(name_split) > 2:
+                    return f'{name_split[1]} {name_split[-1]}'
+                else:
+                    return f'{name_split[0]} {name_split[-1]}'
+            else:
+                return name
+
+        def scanner_fuzzy(key):
+            with Path(completers_path, key).open(encoding='utf-8') as f:
+                while match_name := f.readline().strip():
+                    if match_name.startswith('#'):
+                        continue
+                    for name in all_names:
+                        ratio = fuzz.token_set_ratio(first_last(name),
+                                first_last(match_name))
                         if ratio > 90:
-                            yield (artist, line, ratio)
+                            yield (name, match_name, ratio)
 
-        # Look for perfect matches first.
-        matches = defaultdict(list)
-        def perfect_match(text1, text2):
-            return (text1 == text2) * 100
+        # If any names remain in all_names and any keys lack a match, iterate
+        # over match_keys again seeking fuzzy matches.
+        if all_names:
+            for key in set(match_keys):
+                fuzzy_matches = list(scanner_fuzzy(key))
 
-        # key is in the set of completers and the full set of keys for the
-        # genre.
-        for key in completers:
-            for artist, _, _ in scanner(perfect_match, key):
-                matches[key].append(artist)
+                # For each name, keep the best match.
+                if fuzzy_matches:
+                    fuzzy_matches.sort(key=lambda t: t[-1])
+                    name, match_name, ratio = fuzzy_matches[-1]
+                    matches[key].add(match_name)
 
-        # Do not seek a fuzzy match for names that matched perfectly.
-        for name_group in matches.values():
-            for name in name_group:
-                try:
-                    # Remove names from artist_names as we match them
-                    # to a key to minimize the burden on fuzzy match.
-                    artist_names.remove(name)
-                except ValueError:
-                    # name might have matched in more than one completer,
-                    # in which case it will already have been removed.
-                    continue
+                    all_names.remove(name)
+                    artist_names.discard(name)
+                    match_keys.remove(key)
 
-        # If any names remain in artist_names, iterate over keys again
-        # seeking fuzzy matches.
-        if artist_names:
-            fuzzy_matches = defaultdict(list)
-            fuzzy_match = fuzz.token_set_ratio
-            for key in completers:
-                for artist, line, ratio in scanner(fuzzy_match, key):
-                    fuzzy_matches[artist].append((key, line, ratio))
-
-            # For each artist, keep the best match.
-            for artist, fuzzy_candidates in fuzzy_matches.items():
-                fuzzy_candidates.sort(key=lambda t: t[-1])
-                key, line, ratio = fuzzy_candidates[-1]
-                matches[key].append(line)
+        # If there are still names in artist_names, then they did not match
+        # any key (including 'artist', if artist has a completer file). If
+        # there is an artist key, assign remaining names to matches['artist'].
+        # If artist has a completer file, then there could already be some
+        # names assigned to artist, just not the ones remaining.
+        if 'artist' in all_keys and artist_names:
+            matches['artist'].update(artist_names)
 
         # Currently, only three keys might be interested in the content
         # of the album metadata.
-        new_names = []
+        new_names = set()
         for name in mb_metadata.get('album', ['']):
             # Standardize the formatting of the album metadata.
             if mo := re.match(r'[Ss]ymphony\D+(\d+)', name):
                 name = f'Symphony No. {mo.group(1)}'
-            new_names.append(name)
-        all_keys = genre_spec.all_keys(self.edit_genre)
+            new_names.add(name)
         keys = set(['work', 'title', 'album']).intersection(all_keys)
         if keys:
             key = keys.pop()  # probably only one key left at this point
             matches[key] = new_names
 
         # There might be a field for a date in all_keys or mb_metadata, but
-        # in either case the key could be either 'date' or 'year'.
-        date_keys = set(['date', 'year'])
+        # in either case the key could be either 'date' or 'year' (or both).
+        date_keys = {'date', 'year'}
         match_key_set = date_keys.intersection(all_keys)
         mb_metadata_key_set = date_keys.intersection(mb_metadata)
-        if match_key_set and mb_metadata_key_set:
-            match_key = match_key_set.pop()
-            mb_metadata_key = mb_metadata_key_set.pop()
-            matches[match_key] = mb_metadata[mb_metadata_key]
+
+        # Set 'year' and/or 'date' (all_keys could have both) in matches
+        # as long as both all_keys and mb_metadata have at least one of
+        # 'year' and 'date'. Prioritize use of 'year'.
+        def mb_metadata_get_year_or_date():
+            for key in ('year', 'date'):
+                try:
+                    mb_metadata_key_set.remove(key)
+                except KeyError:
+                    continue
+                return mb_metadata[key]
+
+        while match_key_set and mb_metadata_key_set:
+            for key in ('year', 'date'):
+                try:
+                    match_key_set.remove(key)
+                except KeyError:
+                    continue
+                matches[key].update(mb_metadata_get_year_or_date())
+
 
         # The form gets cleared in editnotebook on create_button clicked. If
         # any field is populated here, the user must have typed something in
@@ -574,7 +620,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
                     del matches[key]
             else:
                 abbrev = (abbreviator, str)[key == 'work']
-                value = [(v, abbrev(v)) for v in matches.pop(key, [''])]
+                value = [(v, abbrev(v)) for v in matches.pop(key, {''})]
                 # Append (key, value) to list only if key does not have a
                 # value provided by the user.
                 primary_kv_list.append((key, value))
@@ -586,7 +632,7 @@ class WorkMetadataEditor(Gtk.ScrolledWindow):
                 if key in matches:
                     del matches[key]
             else:
-                value = [(v,) for v in matches.pop(key, [''])]
+                value = [(v,) for v in matches.pop(key, {''})]
                 # Append (key, value) to list only if key does not have a
                 # value provided by the user.
                 secondary_kv_list.append((key, value))

@@ -4,6 +4,7 @@ maintenance of state variables including uuid, discids, and disc_num.
 It also does zombie protection."""
 
 import atexit
+import os
 import shutil
 import time
 from pathlib import Path
@@ -115,7 +116,7 @@ class Ripper(GObject.Object):
 
             # If disc_ids is now empty, delete the uuid directory too.
             if not self.disc_ids:
-                shutil.rmtree(Path(SOUND, self.uuid))
+                shutil.rmtree(Path(SOUND, self.uuid), ignore_errors=True)
 
     def on_save_button_clicked(self, button, label):
         if self.disc_id is None:
@@ -232,7 +233,16 @@ class Ripper(GObject.Object):
 
         dst_path = Path(dest_dir, f'{track_num:02d}{src_path.suffix}')
 
-        shutil.copyfile(src_path, dst_path)
+        # If SOUND and TRANSFER have the same device ID, then they are in the
+        # same filesystem. In that case, it is possible to use a hard link to
+        # create a file in SOUND. Otherwise, do an actual copy (which is
+        # much slower).
+        dev_id_transfer = os.stat(TRANSFER).st_dev
+        dev_id_sound = os.stat(SOUND).st_dev
+        if dev_id_transfer == dev_id_sound:
+            os.link(src_path, dst_path)
+        else:
+            shutil.copyfile(src_path, dst_path)
 
         # Triggers update of display in files.
         self.emit('import-track-finished', self.uuid, self.disc_num, track_num)
@@ -247,7 +257,8 @@ class Ripper(GObject.Object):
         # track_num one greater than the track_num of the last track in the
         # directory). Accordingly, we delete the directory and start fresh.
         if self.rerip:
-            shutil.rmtree(Path(SOUND, self.uuid, str(self.disc_num)))
+            shutil.rmtree(Path(SOUND, self.uuid, str(self.disc_num)),
+                    ignore_errors=True)
 
         Path(SOUND, self.uuid, str(self.disc_num)).mkdir()
 
@@ -271,7 +282,8 @@ class Ripper(GObject.Object):
             if top_path.is_dir():
                 for i_dir in top_path.iterdir():
                     if int(i_dir.name) >= len(self.saved_disc_ids):
-                        shutil.rmtree(Path(SOUND, self.uuid, i_dir.name))
+                        shutil.rmtree(Path(SOUND, self.uuid, i_dir.name),
+                                ignore_errors=True)
 
     # -Reply handlers----------------------------------------------------------
     def reply_handler(self, command, args):

@@ -1,6 +1,7 @@
 """Classes for fields in the metadata form (primary, secondary, and
 custom)."""
 
+import re
 from contextlib import suppress
 from pathlib import Path
 from unidecode import unidecode
@@ -592,6 +593,10 @@ class Entry(Gtk.Entry):
 
     def on_use_long_activated(self, menuitem):
         text = self.entry_long.get_text()
+
+        # If text ends with "Op. <n>", remove it.
+        text = re.sub(r',*\s*[Oo]p\.*\s+\d+$', '', text)
+
         super().set_text(text)
 
     def on_swap_activated(self, menuitem):

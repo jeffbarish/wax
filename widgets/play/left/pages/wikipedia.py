@@ -93,8 +93,6 @@ class WikipediaView(Gtk.Box):
         self.menuitem = self.menuitems[0]
         self.menuitem.activate()
 
-        self.purge_menu(True, True)
-
     def search(self, name):
         self.webview.load_uri(WIKIPEDIA_URL + name)
 
@@ -103,47 +101,6 @@ class WikipediaView(Gtk.Box):
             self.wikipedia_search_menu.remove(menuitem)
         self.wikipedia_page_next_button.set_sensitive(False)
         self.wikipedia_page_prev_button.set_sensitive(False)
-
-    def purge_menu(self, success, valid):
-        def validate_task(name):
-            import requests
-
-            api_url = 'http://en.wikipedia.org/w/api.php'
-            search_params = {
-                'list': 'search',
-                'srprop': '',
-                'srlimit': 1,
-                'limit': 1,
-                'srinfo': 'suggestion',
-                'srsearch': name,
-                'action': 'query',
-                'format': 'json'
-            }
-
-            results = requests.get(api_url, params=search_params)
-            results_json = results.json()
-
-            if 'error' in results_json:
-                raise Exception
-
-            # For an exact match, use the first version. The second version
-            # will also redirect or present search results with pages on
-            # which the name appears.
-            # return any(r['title'] == name
-            #         for r in results_json['query']['search'])
-            return any(r['title'] for r in results_json['query']['search'])
-
-        if not valid or not success:
-            self.wikipedia_search_menu.remove(self.menuitem)
-
-        if self.menuitems:
-            self.menuitem = self.menuitems.pop()
-            name = self.menuitem.get_label()
-
-            # The second version runs purge in the main process.
-            worker.do_in_subprocess(validate_task, self.purge_menu, name)
-            # valid = validate_task(name)
-            # self.purge_menu(True, valid)
 
 
 page_widget = WikipediaView()

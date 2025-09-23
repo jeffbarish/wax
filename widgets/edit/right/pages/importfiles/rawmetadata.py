@@ -11,6 +11,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, GObject
 
+import mutagen
 from mutagen.id3 import PictureType
 
 from .tagextractors import extract
@@ -92,6 +93,7 @@ class RawMetadata(Gtk.ScrolledWindow):
                 g = list(g)
                 low, high = (g[0][1], g[-1][1])
                 yield str(low) + '-{}'.format(high) * bool(high > low)
+
         def printer(key, lines):
             if len(lines) == 1:
                 self.print_metadata_line(key, lines[0])
@@ -134,7 +136,15 @@ class RawMetadata(Gtk.ScrolledWindow):
         if val is not None:
             text_buffer.insert_with_tags_by_name(get_end_iter(), ': ',
                 'key_font', 'fg_color')
-            text_buffer.insert_with_tags(get_end_iter(), val)
+            if isinstance(val, mutagen.id3._specs.ID3TimeStamp):
+                text_buffer.insert_with_tags(get_end_iter(), str(val.year))
+            elif isinstance(val, int):
+                text_buffer.insert_with_tags(get_end_iter(), str(val))
+            elif isinstance(val, str):
+                text_buffer.insert_with_tags(get_end_iter(), val)
+            else:
+                text_buffer.insert_with_tags(get_end_iter(),
+                        f'unknown type {type(val)}')
 
     def write_message(self, message):
         """Write a message in raw_metadata textview.  The message appears in
@@ -302,9 +312,9 @@ class RawMetadata(Gtk.ScrolledWindow):
 
         # Set props based on the last tag.
         props_d = {}
-        props_d['codec'] = tuple(tags['codec'])
-        props_d['sample rate'] = tuple(tags['sample_rate'])
-        props_d['resolution'] = tuple(tags['bits_per_sample'])
+        props_d['codec'] = tuple(tags.get('codec', ['']))
+        props_d['sample rate'] = tuple(tags.get('sample_rate', ['']))
+        props_d['resolution'] = tuple(tags.get('bits_per_sample', ['']))
         props_d['source'] = ('File',)
         props_d['date created'] = (datetime.now().strftime('%Y %b %d'),)
         props_rec = list(props_d.items())

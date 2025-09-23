@@ -28,7 +28,9 @@ from common.utilities import debug
 from ripper import ripper
 from widgets import options_button
 
-VALID_EXT = SND_EXT + JPG_EXT + PDF_EXT
+ARK_EXT = ('.zip', '.gzip', '.bzip2', '.tar', '.7z', '.rar', '.lha')
+VALID_EXT = SND_EXT + JPG_EXT + PDF_EXT + ARK_EXT
+
 NEW_FOLDER_NAME = 'new folder'
 
 # As in recordingselector, disconnect the model from the view when
@@ -173,7 +175,7 @@ class FileChooser(Gtk.Box):
                     # jpg and pdf.
                     handlers = {JPG_EXT: ['gwenview'],
                             PDF_EXT: ['okular'],
-                            ('.zip',): ['ark'],
+                            ARK_EXT: ['ark'],
                             ('.xlsx', '.ods'): ['libreoffice', '--calc'],
                             SND_EXT: ['play']}
                     for extensions, command in handlers.items():
@@ -442,6 +444,8 @@ class FileChooser(Gtk.Box):
                 else:
                     valid = True
                 row = (name, '', False, valid)
+            elif name_fp.suffix in ARK_EXT:
+                row = (name, '', False, True)
             else:
                 row = (name, '', False, False)
 
