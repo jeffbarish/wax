@@ -174,16 +174,27 @@ class Pop(Main):
     def __call__(self, trackgroup_title, title):
         return title
 
+@dataclass
+class Show(Main):
+    def __post_init__(self):
+        title = first_in_group(self.metadata_long['title'])
+        date = first_in_group(self.metadata_long['date'])
+
+        self.tags = {
+            'album': f'{title} ({date})',
+            'artist': join_group(self.metadata_long['composer']),
+            'genre': 'Show'
+        }
+
+    def __call__(self, trackgroup_title, title):
+        return title
+
 @generic(album='film', artist='composer')
 class Film:
     pass
 
 @generic(album='title', artist='ensemble')
 class Jazz:
-    pass
-
-@generic(album='title', artist='composer')
-class Show:
     pass
 
 @generic(album='title', artist='soloists')

@@ -417,6 +417,9 @@ class FileChooser(Gtk.Box):
     def yield_directory_content(self):
         for name_fp in Path(TRANSFER, *self.current_dir).iterdir():
             name = str(name_fp.name)
+            # Ignore .nfs files.
+            if name.startswith('.nfs'):
+                continue
             if name_fp.is_dir():
                 row = (name, '', True, True)
             elif name_fp.suffix in PDF_EXT:

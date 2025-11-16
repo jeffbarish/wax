@@ -256,7 +256,14 @@ class PlayEngine:
 
     @command
     def on_next_track(self):
-        self._do_seek(1.0)
+        prev_state = self.get_state()
+        self.set_state('NULL')
+
+        self.on_about_to_finish(None)
+        self.start_new_track()
+
+        if prev_state == Gst.State.PLAYING:
+            self.set_state('PLAYING')
 
     @command
     def on_pause(self):

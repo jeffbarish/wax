@@ -41,6 +41,9 @@ class QueueFiles(Gtk.ScrolledWindow):
         # Initialize queuefiles_liststore with any queue files already
         # present.
         for fp in QUEUEFILES.iterdir():
+            # Ignore .nfs files.
+            if fp.name.startswith('.nfs'):
+                continue
             duration, n_works = self.get_stats(fp)
             self.queuefiles_liststore.append((fp.name, duration, n_works))
 

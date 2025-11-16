@@ -181,7 +181,7 @@ class FilesEditor(Gtk.Box):
             if file_list := list(path.iterdir()):
                 listbox.show_all()
                 for sf_path in sorted(file_list):
-                    if sf_path.name.startswith('thumbnail'):
+                    if sf_path.name.startswith(('thumbnail', '.nfs')):
                         continue
                     file_size, mtime = get_size_mtime(sf_path)
                     row = (sf_path.name, file_size, mtime, False)

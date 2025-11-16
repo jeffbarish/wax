@@ -117,6 +117,9 @@ class DocsEditor(Gtk.Box):
 
         documents_dir = Path(DOCUMENTS, uuid)
         for filename in documents_dir.iterdir():
+            # Ignore .nfs files.
+            if filename.name.startswith('.'):
+                continue
             doc_data = self._read_pdf(filename)
             new_row = (filename.name, uuid, doc_data)
             self.my_docs_liststore.append(new_row)
