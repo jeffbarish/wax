@@ -440,7 +440,7 @@ class Image(Gtk.Image):
         self.min_nat_size = (300, 300)
         self.show()
 
-        path = Path(IMAGES_DIR, 'noimage.png')
+        path = Path(IMAGES_DIR, 'noimage.jpg')
         self.pb = self.no_image_pb = GdkPixbuf.Pixbuf.new_from_file(str(path))
 
     # These two overrides allow the image to shrink. It does not matter

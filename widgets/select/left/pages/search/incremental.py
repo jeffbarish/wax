@@ -103,7 +103,7 @@ class SearchIncremental(Gtk.Box):
             flowboxchild.connect('button-press-event',
                     self.on_button_press_event)
 
-        filename = os.path.join(IMAGES_DIR, 'noimage_thumbnail.png')
+        filename = os.path.join(IMAGES_DIR, 'noimage_thumbnail.jpg')
         self.noimage_thumbnail_pb = GdkPixbuf.Pixbuf.new_from_file(filename)
 
         filename = os.path.join(IMAGES_DIR, 'overflow.png')

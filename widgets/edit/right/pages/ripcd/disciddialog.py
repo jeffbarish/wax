@@ -80,7 +80,7 @@ class DiscidDialog(Gtk.Dialog):
         uuid = recording.uuid
         filename = Path(IMAGES, uuid, 'thumbnail-00.jpg')
         if not filename.exists():
-            filename = Path(IMAGES_DIR, 'noimage_thumbnail.png')
+            filename = Path(IMAGES_DIR, 'noimage_thumbnail.jpg')
         thumbnail_pb = Pixbuf.new_from_file(str(filename))
 
         # Sort works by the track id of the first track in each work.

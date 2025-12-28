@@ -112,7 +112,7 @@ class QueueFiles(Gtk.ScrolledWindow):
                 # whence it came.
                 thumbnail_fn = Path(IMAGES, row.uuid, 'thumbnail-00.jpg')
                 if not thumbnail_fn.exists():
-                    thumbnail_fn = Path(IMAGES_DIR, 'noimage_thumbnail.png')
+                    thumbnail_fn = Path(IMAGES_DIR, 'noimage_thumbnail.jpg')
                 with open(thumbnail_fn, 'rb') as fo:
                     thumbnail_data = fo.read()
 
@@ -204,7 +204,7 @@ class QueueFiles(Gtk.ScrolledWindow):
         # Get thumbnail data for the recording with uuid.
         thumbnail_fn = Path(IMAGES, uuid, 'thumbnail-00.jpg')
         if not thumbnail_fn.exists():
-            thumbnail_fn = Path(IMAGES_DIR, 'noimage_thumbnail.png')
+            thumbnail_fn = Path(IMAGES_DIR, 'noimage_thumbnail.jpg')
         with open(thumbnail_fn, 'rb') as fo:
             thumbnail_data = fo.read()
 

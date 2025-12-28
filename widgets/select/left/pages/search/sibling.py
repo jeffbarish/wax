@@ -55,11 +55,10 @@ class SearchSibling(Gtk.Box):
         def func(column, cell, model, treeiter, val):
             work_num = model[treeiter][1]
             work = self.recording.works[work_num]
-            work_long = work.metadata
             primary_keys = config.genre_spec[work.genre]['primary']
-            primary_work_long = work_long[:len(primary_keys)]
-            primary_metadata, = zip(*primary_work_long)
-            primary_vals_str = '\n'.join(primary_metadata)
+            primary_work_long = work.metadata[:len(primary_keys)]
+            primary_vals_str = '\n'.join(', '.join(val)
+                    for val in primary_work_long)
             cell.set_property('text', primary_vals_str)
         cell = self.sibling_cellrenderertext
         col = self.sibling_treeviewcolumn_text
@@ -148,7 +147,7 @@ class SearchSibling(Gtk.Box):
             uuid = recording.uuid
             filename = Path(IMAGES, uuid, 'thumbnail-00.jpg')
             if not filename.exists():
-                filename = Path(IMAGES_DIR, 'noimage_thumbnail.png')
+                filename = Path(IMAGES_DIR, 'noimage_thumbnail.jpg')
             thumbnail_pb = Pixbuf.new_from_file(str(filename))
 
             # Sort works by the track id of the first track in each work.
@@ -184,8 +183,8 @@ class SearchSibling(Gtk.Box):
             work = model.recording.works[work_num]
             primary_keys = config.genre_spec[work.genre]['primary']
             primary_work_long = work.metadata[:len(primary_keys)]
-            primary_metadata, = zip(*primary_work_long)
-            primary_vals_str = '\n'.join(primary_metadata)
+            primary_vals_str = '\n'.join(', '.join(val)
+                    for val in primary_work_long)
 
             tracks = playable_tracks(model.recording.tracks, work.track_ids)
             group_map = {t: GroupTuple(g_name, g_metadata)

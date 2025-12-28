@@ -279,7 +279,7 @@ class Playqueue(Gtk.Box):
             # Get thumbnail.
             filename = Path(IMAGES, cargo.uuid, 'thumbnail-00.jpg')
             if not filename.exists():
-                filename = Path(IMAGES_DIR, 'noimage_thumbnail.png')
+                filename = Path(IMAGES_DIR, 'noimage_thumbnail.jpg')
             thumbnail_pb = Pixbuf.new_from_file(str(filename))
 
             # Although select playqueue does not need props, play metadata
@@ -384,8 +384,8 @@ class Playqueue(Gtk.Box):
                 primary_keys = config.genre_spec[genre]['primary']
                 work = recording.works[work_num]
                 primary_work_long = work.metadata[:len(primary_keys)]
-                primary_metadata, = zip(*primary_work_long)
-                primary_vals_str = '\n'.join(primary_metadata)
+                primary_vals_str = '\n'.join(', '.join(val)
+                        for val in primary_work_long)
                 row.long_metadata = (primary_vals_str,)
 
                 row.tracks = playable_tracks(recording.tracks, work.track_ids)
@@ -421,7 +421,7 @@ class Playqueue(Gtk.Box):
 
         filename = Path(IMAGES, recording.uuid, 'thumbnail-00.jpg')
         if not filename.exists():
-            filename = Path(IMAGES_DIR, 'noimage_thumbnail.png')
+            filename = Path(IMAGES_DIR, 'noimage_thumbnail.jpg')
         thumbnail_pb = Pixbuf.new_from_file(str(filename))
 
         group_map = {t: GroupTuple(g_name, g_metadata)

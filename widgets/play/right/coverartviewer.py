@@ -53,7 +53,7 @@ class CoverArtViewer(Gtk.EventBox):
         file_paths = list(map(str, images_path.glob('image-??.jpg')))
         file_paths.sort()
         if not file_paths:
-            file_paths = [str(Path(IMAGES_DIR, 'noimage.png'))]
+            file_paths = [str(Path(IMAGES_DIR, 'noimage.jpg'))]
 
         pixbufs = map(GdkPixbuf.Pixbuf.new_from_file, file_paths)
         self.scaled_pixbufs = list(map(self.scale_image, pixbufs))
