@@ -416,8 +416,8 @@ class Playqueue(Gtk.Box):
     def enqueue_recording(self, genre, recording, work_num, play_tracks):
         primary_keys = config.genre_spec[genre]['primary']
         work = recording.works[work_num]
-        primary_metadata, = zip(*work.metadata[:len(primary_keys)])
-        primary_vals_str = '\n'.join(primary_metadata)
+        primary_vals_str = '\n'.join(', '.join(val)
+                for val in work.metadata[:len(primary_keys)])
 
         filename = Path(IMAGES, recording.uuid, 'thumbnail-00.jpg')
         if not filename.exists():
