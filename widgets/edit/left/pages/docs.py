@@ -76,6 +76,13 @@ class DocsEditor(Gtk.Box):
             filename, uuid = model[treeiter][0], model[treeiter][1]
             if uuid == NOUUID:
                 filepath = Path(TRANSFER, filename)
+
+                # The document has not been saved to DOCUMENTS yet. If it is
+                # no longer present in TRANSFER, then it is not saveable, so
+                # remove it from model.
+                if not filepath.is_file():
+                    del model[treeiter]
+                    return
             else:
                 filepath = Path(DOCUMENTS, uuid, filename)
             self.pdf_viewer.set_doc(filepath)
