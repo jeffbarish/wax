@@ -514,8 +514,9 @@ class FileChooser(Gtk.Box):
             name, duration, isdir, valid = liststore[paths[0]]
             del_fp = Path(current_fp, name)
             if del_fp.is_dir():
-                # Delete the selected directory (and its contents).
-                shutil.rmtree(str(del_fp))
+                # Delete the selected directory (and its contents). Ignore
+                # errors because there might be a .nfs... file.
+                shutil.rmtree(str(del_fp), ignore_errors=True)
                 return
 
         # Delete selected files.
