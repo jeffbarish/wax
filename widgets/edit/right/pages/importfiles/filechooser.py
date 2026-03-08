@@ -266,7 +266,11 @@ class FileChooser(Gtk.Box):
         for row in self.file_chooser_liststore:
             if row[0] == new_row[0]:
                 break
-        self.file_chooser_treeselection.select_iter(row.iter)
+
+        # Select the row for the new directory, but do not descend into
+        # it (so that the user has an opportunity to rename it).
+        with stop_emission(self.file_chooser_treeselection, 'changed'):
+            self.file_chooser_treeselection.select_iter(row.iter)
         self.file_chooser_treeview.scroll_to_cell(row.path, None, True, 0.5)
 
         with monitor_stop_emission(self.monitor):
