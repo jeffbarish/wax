@@ -250,7 +250,7 @@ class EditNotebook(Gtk.Notebook):
         if self.recording is not None:
             tags, jpg_data, tracks = self.derive_tags(self.recording,
                     self.work_num)
-            ripper.tag_files(tags, jpg_data, tracks[:1])
+            ripper.tag_files(tags, jpg_data, tracks)
 
     def on_changed(self, obj, param):
         sensitive = self.changed

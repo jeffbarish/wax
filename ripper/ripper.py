@@ -188,9 +188,9 @@ class Ripper(GObject.Object):
         if self.is_ripping:
             return
 
-        disc_dir = Path(SOUND, self.uuid, str(self.disc_num))
         for track in tracks:
-            file_p = Path(disc_dir, f'{track.track_num:02d}.flac')
+            track_id = (str(track.disc_num), f'{track.track_num:02d}.flac')
+            file_p = Path(SOUND, self.uuid, *track_id)
 
             # If file_p does not exist (most likely because the sound file
             # is not flac), then do not tag it.
