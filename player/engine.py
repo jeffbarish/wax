@@ -18,6 +18,7 @@ gi.require_version('Gio', '2.0')
 gi.require_version('Gst', '1.0')
 gi.require_version('GLib', '2.0')
 from gi.repository import Gio
+from gi.repository import GioUnix
 from gi.repository import Gst
 from gi.repository import GLib
 
@@ -62,7 +63,7 @@ class PlayEngine:
         self.bus.connect('message::eos', self.on_eos)
         self.bus.connect('message::error', self.on_error)
 
-        input_stream = Gio.UnixInputStream.new(0, True)
+        input_stream = GioUnix.InputStream.new(0, True)
         self.data_input_stream = Gio.DataInputStream.new(input_stream)
         self.queue_read()
 
